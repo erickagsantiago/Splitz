@@ -13,8 +13,12 @@ export default async function handler(req) {
     });
   }
 
-  if (req.method !== 'POST') {
-    return new Response('Method not allowed', { status: 405 });
+  const apiKey = process.env.ANTHROPIC_API_KEY;
+  if (!apiKey) {
+    return new Response(JSON.stringify({ error: 'Missing API key', content: [{ text: '{"items":[],"serviceCharge":null}' }] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+    });
   }
 
   try {
@@ -25,15 +29,15 @@ export default async function handler(req) {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-api-key': process.env.ANTHROPIC_API_KEY,
+        'x-api-key': apiKey,
         'anthropic-version': '2023-06-01'
       },
       body: JSON.stringify(body)
     });
 
-    const data = await response.json();
+    const text = await response.text();
 
-    return new Response(JSON.stringify(data), {
+    return new Response(text, {
       status: 200,
       headers: {
         'Content-Type': 'application/json',
@@ -41,12 +45,9 @@ export default async function handler(req) {
       }
     });
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message }), {
-      status: 500,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
+    return new Response(JSON.stringify({ error: e.message, content: [] }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
   }
 }
