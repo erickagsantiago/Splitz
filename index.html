@@ -342,7 +342,6 @@ select:focus{border-color:var(--accent)}
     <p style="font-size:12px;color:var(--mid);margin-bottom:14px;line-height:1.6">📸 Photo auto-deleted in <span style="color:var(--yellow);font-weight:700">3 days</span>. Itemized data kept.</p>
     <label class="upload-lbl" for="fileInput">📷 Upload Receipt</label>
     <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)"/>
-    <button class="btn btn-ghost mt10" onclick="useDemo()">✨ Try Demo Receipt</button>
   </div>
 
   <!-- Split between -->
@@ -699,7 +698,6 @@ select:focus{border-color:var(--accent)}
     <div style="font-size:15px;font-weight:700;margin-bottom:6px">No receipts yet</div>
     <div style="font-size:13px;color:var(--mid);margin-bottom:16px">Upload a receipt and generate a link to start tracking payments</div>
     <button class="btn btn-primary" style="max-width:200px;margin:0 auto 10px" onclick="goTo(0)">Upload Receipt</button>
-    <button class="btn btn-ghost" style="max-width:200px;margin:0 auto;font-size:13px" onclick="loadDemoSessions()">👀 See Demo (7 Bills)</button>
   </div>
 
   <!-- Session detail -->
@@ -1274,151 +1272,6 @@ function changeNum(d){
   if(items.length > 0) refreshSummary();
 }
 
-// ─── Demo sessions ────────────────────────────────────────────────────────────
-function loadDemoSessions(){
-  gcashNum  = '0917 123 4567';
-  gcashName = 'Ericka S.';
-  var e1 = el('gcashNum');  if(e1) e1.value = gcashNum;
-  var e2 = el('gcashName'); if(e2) e2.value = gcashName;
-  try{ localStorage.removeItem('splitsies_sessions'); }catch(e){}
-
-  sessions = [
-    {
-      id:1, label:"Bill #1", date:"May 24 · 7:45 PM", slug:"09171234567-a1b2",
-      numPeople:4, splitMode:'item', svc:116.88,
-      items:[
-        {id:1,name:"Crispy Pata",price:475},
-        {id:2,name:"House Crispy",price:375},
-        {id:3,name:"Sinigang",price:530},
-        {id:4,name:"White Rice (×1/2)",price:80},
-        {id:5,name:"White Rice (×2/2)",price:80}
-      ],
-      payments:[
-        {name:"Julius", items:[1],   equalSplit:false, amount:523, confirmed:true,  isHost:false},
-        {name:"Mia",    items:[2],   equalSplit:false, amount:413, confirmed:true,  isHost:false},
-        {name:"Carlo",  items:[3,4], equalSplit:false, amount:671, confirmed:true,  isHost:false}
-      ]
-    },
-    {
-      id:2, label:"Bill #2", date:"May 25 · 1:15 PM", slug:"09171234567-c3d4",
-      numPeople:3, splitMode:'item', svc:95,
-      items:[
-        {id:1,name:"Palabok",price:280},
-        {id:2,name:"Lechon Kawali",price:420},
-        {id:3,name:"Halo-Halo (×1/2)",price:110},
-        {id:4,name:"Halo-Halo (×2/2)",price:110},
-        {id:5,name:"Iced Tea (×1/3)",price:65},
-        {id:6,name:"Iced Tea (×2/3)",price:65},
-        {id:7,name:"Iced Tea (×3/3)",price:65}
-      ],
-      payments:[
-        {name:"Bea",   items:[1,5], equalSplit:false, amount:379, confirmed:false, isHost:false},
-        {name:"Marco", items:[2,6], equalSplit:false, amount:534, confirmed:false, isHost:false}
-      ]
-    },
-    {
-      id:3, label:"Bill #3", date:"May 26 · 8:00 PM", slug:"09171234567-e5f6",
-      numPeople:5, splitMode:'equal', svc:154,
-      items:[
-        {id:1,name:"Boodle Fight Set",price:1200},
-        {id:2,name:"Extra Rice (×1/3)",price:40},
-        {id:3,name:"Extra Rice (×2/3)",price:40},
-        {id:4,name:"Extra Rice (×3/3)",price:40},
-        {id:5,name:"Buko Juice (×1/4)",price:75},
-        {id:6,name:"Buko Juice (×2/4)",price:75},
-        {id:7,name:"Buko Juice (×3/4)",price:75},
-        {id:8,name:"Buko Juice (×4/4)",price:75}
-      ],
-      payments:[
-        {name:"Toni", items:[], equalSplit:true, amount:368, confirmed:true,  isHost:false},
-        {name:"Pau",  items:[], equalSplit:true, amount:368, confirmed:true,  isHost:false},
-        {name:"Cris", items:[], equalSplit:true, amount:368, confirmed:false, isHost:false},
-        {name:"Jas",  items:[], equalSplit:true, amount:368, confirmed:false, isHost:false}
-      ]
-    },
-    {
-      id:4, label:"Bill #4", date:"May 27 · 2:26 PM", slug:"09171234567-g7h8",
-      numPeople:4, splitMode:'item', svc:120,
-      items:[
-        {id:1,name:"Samgyupsal Set",price:580},
-        {id:2,name:"Ramen (×1/2)",price:295},
-        {id:3,name:"Ramen (×2/2)",price:295},
-        {id:4,name:"Soju (×1/2)",price:180},
-        {id:5,name:"Soju (×2/2)",price:180},
-        {id:6,name:"Rice (×1/3)",price:35},
-        {id:7,name:"Rice (×2/3)",price:35},
-        {id:8,name:"Rice (×3/3)",price:35}
-      ],
-      payments:[
-        {name:"Sam", items:[2,4], equalSplit:false, amount:522, confirmed:false, isHost:false}
-      ]
-    },
-    {
-      id:5, label:"Bill #5", date:"May 28 · 12:30 PM", slug:"09171234567-i9j0",
-      numPeople:6, splitMode:'equal', svc:180,
-      items:[
-        {id:1,name:"Grilled Liempo",price:520},
-        {id:2,name:"Kare-Kare",price:480},
-        {id:3,name:"Sisig",price:360},
-        {id:4,name:"Rice (×1/4)",price:40},
-        {id:5,name:"Rice (×2/4)",price:40},
-        {id:6,name:"Rice (×3/4)",price:40},
-        {id:7,name:"Rice (×4/4)",price:40},
-        {id:8,name:"Calamansi Juice (×1/3)",price:70},
-        {id:9,name:"Calamansi Juice (×2/3)",price:70},
-        {id:10,name:"Calamansi Juice (×3/3)",price:70}
-      ],
-      payments:[
-        {name:"Lia",  items:[], equalSplit:true, amount:318, confirmed:true,  isHost:false},
-        {name:"Rex",  items:[], equalSplit:true, amount:318, confirmed:true,  isHost:false},
-        {name:"Nina", items:[], equalSplit:true, amount:318, confirmed:true,  isHost:false},
-        {name:"Dave", items:[], equalSplit:true, amount:318, confirmed:true,  isHost:false},
-        {name:"Kath", items:[], equalSplit:true, amount:318, confirmed:true,  isHost:false}
-      ]
-    },
-    {
-      id:6, label:"Bill #6", date:"May 29 · 7:30 PM", slug:"09171234567-k1l2",
-      numPeople:3, splitMode:'item', svc:88,
-      items:[
-        {id:1,name:"Beef Tapa",price:320},
-        {id:2,name:"Chicken Inasal",price:290},
-        {id:3,name:"Bangus Sisig",price:340},
-        {id:4,name:"Garlic Rice (×1/2)",price:55},
-        {id:5,name:"Garlic Rice (×2/2)",price:55},
-        {id:6,name:"Mango Shake (×1/2)",price:90},
-        {id:7,name:"Mango Shake (×2/2)",price:90}
-      ],
-      payments:[
-        {name:"Andrei", items:[2,4,6], equalSplit:false, amount:478, confirmed:false, isHost:false}
-      ]
-    },
-    {
-      id:7, label:"Bill #7", date:"May 30 · 2:20 PM", slug:"09171234567-m3n4",
-      numPeople:5, splitMode:'item', svc:210,
-      items:[
-        {id:1,name:"Wagyu Steak",price:980},
-        {id:2,name:"Seafood Platter",price:850},
-        {id:3,name:"Pasta Carbonara",price:420},
-        {id:4,name:"Caesar Salad",price:280},
-        {id:5,name:"Chocolate Lava Cake (×1/2)",price:180},
-        {id:6,name:"Chocolate Lava Cake (×2/2)",price:180},
-        {id:7,name:"Sparkling Water (×1/3)",price:85},
-        {id:8,name:"Sparkling Water (×2/3)",price:85},
-        {id:9,name:"Sparkling Water (×3/3)",price:85}
-      ],
-      payments:[]
-    }
-  ];
-
-  activeSession = 6;
-  items          = sessions[activeSession].items.slice();
-  svcFromReceipt = sessions[activeSession].svc;
-  numPeople      = sessions[activeSession].numPeople;
-  splitMode      = sessions[activeSession].splitMode;
-
-  persistSessions();
-  goTo(6);
-}
 
 function loadGcash(){
   try{
@@ -1847,11 +1700,6 @@ function handleFile(e){
   runAI(f);
 }
 
-function useDemo(){
-  items = DEMO.slice();
-  svcFromReceipt = null;
-  showSummary();
-}
 
 function runAI(file){
   // Guard: file size limit 5MB
@@ -1881,7 +1729,11 @@ function runAI(file){
 
     var streamReader = null;
 
-    fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
+    fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{
+      'Content-Type':'application/json',
+      'anthropic-version':'2023-06-01',
+      'anthropic-dangerous-request-flag':'true'
+    },body:body})
     .then(function(r){
       streamReader = r.body.getReader();
       var dec = new TextDecoder();
