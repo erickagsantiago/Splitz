@@ -1713,6 +1713,11 @@ function runAI(file){
   el('aiSection').scrollIntoView({behavior:'smooth',block:'start'});
   items=[];
 
+  // Show timeout message after 15s
+  var timeoutMsg = setTimeout(function(){
+    el('aiLog').textContent='Still working… this can take up to 30 seconds for the first scan';
+  }, 15000);
+
   // Compress image before sending to avoid size limits
   var img = new Image();
   var objectUrl = URL.createObjectURL(file);
@@ -1720,7 +1725,7 @@ function runAI(file){
   img.onload = function(){
     URL.revokeObjectURL(objectUrl);
     var canvas = document.createElement('canvas');
-    var maxDim = 1200;
+    var maxDim = 800;
     var w = img.width, h = img.height;
     if(w > maxDim || h > maxDim){
       if(w > h){ h = Math.round(h * maxDim/w); w = maxDim; }
@@ -1728,7 +1733,7 @@ function runAI(file){
     }
     canvas.width = w; canvas.height = h;
     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    var b64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+    var b64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
     var body = JSON.stringify({
       model:'claude-sonnet-4-20250514',
       max_tokens:1500,
@@ -1742,6 +1747,7 @@ function runAI(file){
     fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
     .then(function(r){ return r.json(); })
     .then(function(data){
+      clearTimeout(timeoutMsg);
       try{
         var text = '';
         if(data.content && data.content[0] && data.content[0].text){
@@ -1772,6 +1778,7 @@ function runAI(file){
       showSummary();
     })
     .catch(function(err){
+      clearTimeout(timeoutMsg);
       showToast('Connection error — check your internet and try again');
       items = [];
       svcFromReceipt = null;
