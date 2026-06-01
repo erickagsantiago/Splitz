@@ -1,4 +1,11 @@
-export const config = { api: { bodyParser: { sizeLimit: '10mb' } } };
+export const config = {
+  api: {
+    bodyParser: {
+      sizeLimit: '10mb'
+    }
+  },
+  maxDuration: 30
+};
 
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -8,8 +15,11 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).end();
 
+  if (!process.env.ANTHROPIC_API_KEY) {
+    return res.status(500).json({ error: 'API key not configured' });
+  }
+
   try {
-    // Remove stream for server-side — get full response then return
     const body = { ...req.body, stream: false };
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
@@ -23,8 +33,9 @@ export default async function handler(req, res) {
     });
 
     const data = await response.json();
-    res.status(response.status).json(data);
+    return res.status(200).json(data);
   } catch (e) {
-    res.status(500).json({ error: e.message });
+    console.error('Claude API error:', e.message);
+    return res.status(500).json({ error: e.message });
   }
 }
