@@ -1749,9 +1749,16 @@ function runAI(file){
     .then(function(data){
       clearTimeout(timeoutMsg);
       try{
+        // Show full response for debugging
+        var fullResponse = JSON.stringify(data).slice(0, 300);
+        el('aiLog').textContent = 'Response: ' + fullResponse;
+
         var text = '';
         if(data.content && data.content[0] && data.content[0].text){
           text = data.content[0].text;
+        } else if(data.error) {
+          el('aiLog').textContent = 'API Error: ' + JSON.stringify(data.error);
+          throw new Error('API error: ' + data.error.type);
         }
         el('aiLog').textContent = text;
         // Try to extract JSON from anywhere in the response
