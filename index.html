@@ -1718,11 +1718,11 @@ function runAI(file){
     var b64 = reader.result.split(',')[1];
     var body = JSON.stringify({
       model:'claude-sonnet-4-20250514',
-      max_tokens:1000,
+      max_tokens:1500,
       stream:false,
       messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},
-        {type:'text',text:'You are reading a Philippine restaurant receipt.\n\nRULES:\n- Extract food/drink order items only\n- Use UNIT COST as unitPrice, QTY column as qty\n- Expand abbreviated names (e.g. M-CRSPYPNCTPA → Crispy Pata)\n- EXCLUDE: Gross Sales, VAT lines, Total lines, subtotals, zero-amount items\n- If Service Charge exists, extract as serviceCharge number, else null\n\nReturn ONLY valid JSON:\n{"items":[{"name":"Item","unitPrice":number,"qty":number}],"serviceCharge":number|null}'}
+        {type:'text',text:'Look at this receipt image and extract all food and drink items with their prices.\n\nRules:\n- Extract every line item (food/drinks only)\n- Use the unit price per item (not total if qty > 1)\n- Expand abbreviations to full names\n- Skip: totals, subtotals, VAT lines, gross sales, service charge lines\n- If you see a service charge amount, extract it separately\n\nYou MUST respond with ONLY this JSON format, nothing else, no markdown:\n{"items":[{"name":"Item Name","unitPrice":100,"qty":1}],"serviceCharge":null}\n\nIf you cannot read the receipt, still return: {"items":[],"serviceCharge":null}'}
       ]}]
     });
 
@@ -1735,7 +1735,11 @@ function runAI(file){
           text = data.content[0].text;
         }
         el('aiLog').textContent = text;
-        var parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+        // Try to extract JSON from anywhere in the response
+        var jsonMatch = text.match(/\{[\s\S]*\}/);
+        if(!jsonMatch) throw new Error('No JSON found');
+        var parsed = JSON.parse(jsonMatch[0]);
+        if(!parsed.items || !parsed.items.length) throw new Error('No items');
         var expanded = [];
         parsed.items.forEach(function(it){
           var qty = it.qty||1;
