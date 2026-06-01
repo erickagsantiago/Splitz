@@ -1,31 +1,25 @@
 export const config = {
-  api: {
-    bodyParser: {
-      sizeLimit: '15mb'
-    }
-  },
-  maxDuration: 60
+  runtime: 'edge'
 };
 
-export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+export default async function handler(req) {
+  if (req.method === 'OPTIONS') {
+    return new Response(null, {
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type'
+      }
+    });
+  }
 
-  if (req.method === 'OPTIONS') return res.status(200).end();
-  if (req.method !== 'POST') return res.status(405).end();
-
-  console.log('API key exists:', !!process.env.ANTHROPIC_API_KEY);
-  console.log('Body size:', JSON.stringify(req.body).length);
-
-  if (!process.env.ANTHROPIC_API_KEY) {
-    console.error('No API key');
-    return res.status(500).json({ error: 'API key not configured' });
+  if (req.method !== 'POST') {
+    return new Response('Method not allowed', { status: 405 });
   }
 
   try {
-    const body = { ...req.body, stream: false };
-    console.log('Calling Anthropic...');
+    const body = await req.json();
+    body.stream = false;
 
     const response = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -37,12 +31,22 @@ export default async function handler(req, res) {
       body: JSON.stringify(body)
     });
 
-    console.log('Anthropic status:', response.status);
     const data = await response.json();
-    console.log('Response type:', data.type, 'error:', data.error);
-    return res.status(200).json(data);
+
+    return new Response(JSON.stringify(data), {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
   } catch (e) {
-    console.error('Error:', e.message);
-    return res.status(500).json({ error: e.message });
+    return new Response(JSON.stringify({ error: e.message }), {
+      status: 500,
+      headers: {
+        'Content-Type': 'application/json',
+        'Access-Control-Allow-Origin': '*'
+      }
+    });
   }
 }
