@@ -13,15 +13,20 @@ export default async function handler(req) {
     });
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
-  if (!apiKey) {
-    return new Response(JSON.stringify({ error: 'Missing API key', content: [{ text: '{"items":[],"serviceCharge":null}' }] }), {
-      status: 200,
-      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
-    });
-  }
-
   try {
+    const apiKey = process.env.ANTHROPIC_API_KEY;
+    
+    // Debug: return key status
+    if (!apiKey) {
+      return new Response(JSON.stringify({ 
+        debug: 'NO_API_KEY',
+        content: [{ text: 'no key found' }] 
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
+
     const body = await req.json();
     body.stream = false;
 
@@ -36,16 +41,29 @@ export default async function handler(req) {
     });
 
     const text = await response.text();
+    
+    // If response looks empty or wrong, show status
+    if (!text || text.length < 10) {
+      return new Response(JSON.stringify({
+        debug: 'EMPTY_RESPONSE',
+        status: response.status,
+        content: [{ text: 'empty from anthropic: ' + response.status }]
+      }), {
+        status: 200,
+        headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
+      });
+    }
 
     return new Response(text, {
       status: 200,
-      headers: {
-        'Content-Type': 'application/json',
-        'Access-Control-Allow-Origin': '*'
-      }
+      headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
+
   } catch (e) {
-    return new Response(JSON.stringify({ error: e.message, content: [] }), {
+    return new Response(JSON.stringify({ 
+      debug: 'EXCEPTION: ' + e.message,
+      content: [{ text: 'error: ' + e.message }] 
+    }), {
       status: 200,
       headers: { 'Content-Type': 'application/json', 'Access-Control-Allow-Origin': '*' }
     });
