@@ -1488,7 +1488,7 @@ function handleQrUpload(e){
     el('qrUploadLabel').style.borderColor = 'var(--accent)';
     el('qrUploadLabel').style.background  = 'var(--abg)';
   };
-  reader.readAsDataURL(file);
+  img.src = objectUrl;
 }
 
 function removeQr(){
@@ -1702,8 +1702,8 @@ function handleFile(e){
 
 
 function runAI(file){
-  if(file.size > 5 * 1024 * 1024){
-    showToast('Image too large — please use a photo under 5MB');
+  if(file.size > 20 * 1024 * 1024){
+    showToast('Image too large — please use a photo under 20MB');
     return;
   }
 
@@ -1713,9 +1713,22 @@ function runAI(file){
   el('aiSection').scrollIntoView({behavior:'smooth',block:'start'});
   items=[];
 
-  var reader = new FileReader();
-  reader.onload = function(){
-    var b64 = reader.result.split(',')[1];
+  // Compress image before sending to avoid size limits
+  var img = new Image();
+  var objectUrl = URL.createObjectURL(file);
+  img.onerror = function(){ URL.revokeObjectURL(objectUrl); showToast('Could not load image — try another photo'); el('aiSection').style.display='none'; };
+  img.onload = function(){
+    URL.revokeObjectURL(objectUrl);
+    var canvas = document.createElement('canvas');
+    var maxDim = 1200;
+    var w = img.width, h = img.height;
+    if(w > maxDim || h > maxDim){
+      if(w > h){ h = Math.round(h * maxDim/w); w = maxDim; }
+      else { w = Math.round(w * maxDim/h); h = maxDim; }
+    }
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    var b64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
     var body = JSON.stringify({
       model:'claude-sonnet-4-20250514',
       max_tokens:1500,
