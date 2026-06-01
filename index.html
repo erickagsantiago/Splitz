@@ -1702,7 +1702,6 @@ function handleFile(e){
 
 
 function runAI(file){
-  // Guard: file size limit 5MB
   if(file.size > 5 * 1024 * 1024){
     showToast('Image too large — please use a photo under 5MB');
     return;
@@ -1710,7 +1709,7 @@ function runAI(file){
 
   el('aiSection').style.display='block';
   el('summarySection').style.display='none';
-  el('aiLog').textContent='Analyzing image…';
+  el('aiLog').textContent='Analyzing receipt… please wait';
   el('aiSection').scrollIntoView({behavior:'smooth',block:'start'});
   items=[];
 
@@ -1720,63 +1719,44 @@ function runAI(file){
     var body = JSON.stringify({
       model:'claude-sonnet-4-20250514',
       max_tokens:1000,
-      stream:true,
+      stream:false,
       messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},
         {type:'text',text:'You are reading a Philippine restaurant receipt.\n\nRULES:\n- Extract food/drink order items only\n- Use UNIT COST as unitPrice, QTY column as qty\n- Expand abbreviated names (e.g. M-CRSPYPNCTPA → Crispy Pata)\n- EXCLUDE: Gross Sales, VAT lines, Total lines, subtotals, zero-amount items\n- If Service Charge exists, extract as serviceCharge number, else null\n\nReturn ONLY valid JSON:\n{"items":[{"name":"Item","unitPrice":number,"qty":number}],"serviceCharge":number|null}'}
       ]}]
     });
 
-    var streamReader = null;
-
-    fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{
-      'Content-Type':'application/json',
-      'anthropic-version':'2023-06-01',
-      'anthropic-dangerous-request-flag':'true'
-    },body:body})
-    .then(function(r){
-      streamReader = r.body.getReader();
-      var dec = new TextDecoder();
-      var full = '';
-      function pump(){
-        return streamReader.read().then(function(chunk){
-          if(chunk.done){
-            try{
-              var parsed = JSON.parse(full.replace(/```json|```/g,'').trim());
-              var expanded = [];
-              parsed.items.forEach(function(it){
-                var qty = it.qty||1;
-                var up  = it.unitPrice||it.price||0;
-                for(var q=0;q<qty;q++){
-                  expanded.push({name: qty>1 ? it.name+' (×'+(q+1)+'/'+qty+')' : it.name, price:up});
-                }
-              });
-              items = expanded.map(function(it,i){return Object.assign({},it,{id:i+1});});
-              svcFromReceipt = (parsed.serviceCharge!=null && !isNaN(parsed.serviceCharge)) ? Number(parsed.serviceCharge) : null;
-            }catch(e){
-              items = DEMO.slice();
-              svcFromReceipt = null;
-            }
-            el('aiSection').style.display='none';
-            showSummary();
-            return;
+    fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      try{
+        var text = '';
+        if(data.content && data.content[0] && data.content[0].text){
+          text = data.content[0].text;
+        }
+        el('aiLog').textContent = text;
+        var parsed = JSON.parse(text.replace(/```json|```/g,'').trim());
+        var expanded = [];
+        parsed.items.forEach(function(it){
+          var qty = it.qty||1;
+          var up  = it.unitPrice||it.price||0;
+          for(var q=0;q<qty;q++){
+            expanded.push({name: qty>1 ? it.name+' (×'+(q+1)+'/'+qty+')' : it.name, price:up});
           }
-          var lines = dec.decode(chunk.value).split('\n').filter(function(l){return l.startsWith('data: ');});
-          lines.forEach(function(line){
-            try{
-              var j = JSON.parse(line.slice(6));
-              if(j.delta && j.delta.text){ full+=j.delta.text; el('aiLog').textContent=full; }
-            }catch(e){}
-          });
-          return pump();
         });
+        items = expanded.map(function(it,i){return Object.assign({},it,{id:i+1});});
+        svcFromReceipt = (parsed.serviceCharge!=null && !isNaN(parsed.serviceCharge)) ? Number(parsed.serviceCharge) : null;
+      }catch(e){
+        showToast('Could not read receipt — please try again or add items manually');
+        items = [];
+        svcFromReceipt = null;
       }
-      return pump();
+      el('aiSection').style.display='none';
+      showSummary();
     })
-    .catch(function(){
-      // Cancel the stream reader to free memory
-      if(streamReader){ try{ streamReader.cancel(); }catch(e){} }
-      items = DEMO.slice();
+    .catch(function(err){
+      showToast('Connection error — check your internet and try again');
+      items = [];
       svcFromReceipt = null;
       el('aiSection').style.display='none';
       showSummary();
