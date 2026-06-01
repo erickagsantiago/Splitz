@@ -1725,7 +1725,7 @@ function runAI(file){
   img.onload = function(){
     URL.revokeObjectURL(objectUrl);
     var canvas = document.createElement('canvas');
-    var maxDim = 800;
+    var maxDim = 1000;
     var w = img.width, h = img.height;
     if(w > maxDim || h > maxDim){
       if(w > h){ h = Math.round(h * maxDim/w); w = maxDim; }
@@ -1733,7 +1733,7 @@ function runAI(file){
     }
     canvas.width = w; canvas.height = h;
     canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-    var b64 = canvas.toDataURL('image/jpeg', 0.7).split(',')[1];
+    var b64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
     var body = JSON.stringify({
       model:'claude-sonnet-4-20250514',
       max_tokens:1500,
@@ -1770,12 +1770,16 @@ function runAI(file){
         items = expanded.map(function(it,i){return Object.assign({},it,{id:i+1});});
         svcFromReceipt = (parsed.serviceCharge!=null && !isNaN(parsed.serviceCharge)) ? Number(parsed.serviceCharge) : null;
       }catch(e){
-        showToast('Could not read receipt — please try again or add items manually');
+        // Show what AI returned for debugging
+        el('aiLog').textContent = 'AI said: ' + (text ? text.slice(0,200) : 'empty response');
+        showToast('Could not read receipt — see AI response above');
         items = [];
         svcFromReceipt = null;
       }
-      el('aiSection').style.display='none';
-      showSummary();
+      if(items.length > 0){
+        el('aiSection').style.display='none';
+        showSummary();
+      }
     })
     .catch(function(err){
       clearTimeout(timeoutMsg);
