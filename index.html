@@ -1,0 +1,2496 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no"/>
+<title>Splitz</title>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;600;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#F4F6FA;--white:#FFFFFF;--muted:#F7F8FA;--border:#EAECF0;
+  --accent:#00B37A;--accent2:#009A67;--abg:rgba(0,179,122,0.08);
+  --red:#E03B3B;--yellow:#C47C0A;--ybg:rgba(196,124,10,0.08);
+  --blue:#1A6FE8;--bbg:rgba(26,111,232,0.08);
+  --text:#0F1F3D;--mid:#5A6A85;--dim:#9AAABE;
+}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:'Plus Jakarta Sans',sans-serif;
+  background:var(--bg);color:var(--text);
+  min-height:100vh;
+  padding-bottom:calc(90px + env(safe-area-inset-bottom));
+  -webkit-font-smoothing:antialiased;
+  -webkit-tap-highlight-color:transparent;
+  overscroll-behavior-y:none;
+}
+
+/* Centre content on tablets */
+.hdr,
+.screen,
+.nav > *,
+.nav{max-width:600px;margin-left:auto;margin-right:auto}
+.hdr{padding-left:20px;padding-right:20px}
+.nav{max-width:100%}
+.nav > *{max-width:100%}
+
+/* Header */
+.hdr{background:linear-gradient(135deg,#00B37A,#008F60);padding:14px 20px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;box-shadow:0 2px 16px rgba(0,179,122,0.3)}
+.badge{font-size:10px;color:rgba(255,255,255,0.75);background:rgba(255,255,255,0.15);border:1px solid rgba(255,255,255,0.25);padding:3px 10px;border-radius:20px;letter-spacing:1px;text-transform:uppercase;font-weight:700}
+
+/* Screens */
+.screen{display:none;padding:0 16px 24px}
+.screen.active{display:block}
+
+/* Typography */
+.ptitle{font-size:24px;font-weight:900;letter-spacing:-0.8px;padding:24px 0 4px;line-height:1.15}
+.psub{color:var(--mid);font-size:14px;margin-top:4px;margin-bottom:0}
+.slabel{font-size:11px;color:var(--dim);font-weight:700;letter-spacing:1.2px;text-transform:uppercase;margin-bottom:12px}
+
+/* Cards */
+.card{background:var(--white);border:1px solid var(--border);border-radius:16px;padding:16px 18px;margin-bottom:12px}
+.card-green{background:linear-gradient(135deg,#EBF9F4,#E0F5EE);border-color:rgba(0,179,122,0.2)}
+.card-blue{background:linear-gradient(135deg,#EEF4FF,#E8F0FF);border-color:rgba(26,111,232,0.15)}
+.card-yellow{background:linear-gradient(135deg,#FFFBF0,#FFF8E6);border-color:rgba(196,124,10,0.2)}
+
+/* Forms — 16px prevents iOS zoom on focus */
+.flabel{display:block;font-size:12px;color:var(--mid);font-weight:600;margin-bottom:6px}
+input[type=text],input[type=number]{
+  width:100%;background:var(--muted);border:1px solid var(--border);
+  border-radius:10px;color:var(--text);padding:12px 14px;
+  font-size:16px;font-family:inherit;outline:none;
+  -webkit-appearance:none;appearance:none;
+  min-height:48px;
+}
+input[type=text]:focus,input[type=number]:focus{border-color:var(--accent)}
+input[type=number]{-moz-appearance:textfield}
+input[type=number]::-webkit-inner-spin-button,
+input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
+select{
+  width:100%;background:var(--muted);border:1px solid var(--border);
+  border-radius:10px;color:var(--text);padding:12px 14px;
+  font-size:16px;font-family:inherit;outline:none;
+  -webkit-appearance:none;appearance:none;
+  min-height:48px;cursor:pointer;
+}
+select:focus{border-color:var(--accent)}
+.field{margin-bottom:12px}
+.field:last-child{margin-bottom:0}
+
+/* Buttons — min 48px touch target */
+.btn{width:100%;padding:15px;border-radius:12px;border:none;font-family:inherit;font-weight:700;font-size:16px;cursor:pointer;transition:all 0.15s;display:block;text-align:center;min-height:48px;-webkit-tap-highlight-color:transparent}
+.btn:active{opacity:0.85;transform:scale(0.985)}
+.btn-primary{background:linear-gradient(135deg,#00B37A,#009A67);color:#fff;box-shadow:0 4px 16px rgba(0,179,122,0.2)}
+.btn-ghost{background:transparent;color:var(--mid);border:1px solid var(--border)}
+.btn-green-outline{background:var(--abg);color:var(--accent);border:1px solid rgba(0,179,122,0.25)}
+.btn-blue{background:linear-gradient(135deg,#0055A4,#003F7A);color:#fff;box-shadow:0 4px 16px rgba(0,85,164,0.2)}
+
+/* Counter */
+.counter{display:flex;align-items:center;gap:16px}
+.cbtn{width:48px;height:48px;border-radius:10px;background:var(--muted);border:1px solid var(--border);color:var(--text);font-size:22px;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;flex-shrink:0;-webkit-tap-highlight-color:transparent}
+.cnum{flex:1;text-align:center}
+.cnumval{font-size:36px;font-weight:900;color:var(--accent);letter-spacing:-1.5px;line-height:1}
+.cnumsub{font-size:12px;color:var(--dim);margin-top:2px}
+
+/* Upload */
+.upload-lbl{display:block;width:100%;padding:15px;border-radius:12px;background:linear-gradient(135deg,#00B37A,#009A67);color:#fff;font-weight:700;font-size:16px;text-align:center;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(0,179,122,0.2);min-height:48px}
+
+/* Split toggle */
+.split-toggle{display:flex;background:var(--muted);border:1px solid var(--border);border-radius:12px;padding:4px;gap:4px;margin-bottom:14px}
+.stab{flex:1;padding:10px 8px;border-radius:9px;border:none;font-family:inherit;font-size:14px;font-weight:600;cursor:pointer;color:var(--mid);background:transparent;min-height:44px}
+.stab.active{background:#fff;color:var(--accent);font-weight:700;box-shadow:0 1px 6px rgba(0,0,0,0.08)}
+
+/* Equal share box */
+.eq-box{background:linear-gradient(135deg,#EBF9F4,#E0F5EE);border:1px solid rgba(0,179,122,0.2);border-radius:12px;padding:16px;text-align:center;margin-top:6px}
+.eq-amt{font-size:32px;font-weight:900;color:var(--accent);letter-spacing:-1px;line-height:1}
+.eq-sub{font-size:12px;color:var(--mid);margin-top:4px}
+
+/* Item rows */
+.item-row{display:flex;justify-content:space-between;align-items:center;padding:12px 8px;border-radius:10px;cursor:pointer;border:1px solid transparent;margin:2px -8px;transition:all 0.15s;min-height:48px}
+.item-row.on{background:var(--abg);border-color:rgba(0,179,122,0.2)}
+.ichk{width:22px;height:22px;border-radius:6px;border:1.5px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;flex-shrink:0;color:#fff;transition:all 0.15s}
+.ichk.on{background:var(--accent);border-color:var(--accent)}
+
+/* Row divider */
+.divider{height:1px;background:var(--border);margin:2px 0}
+.row{display:flex;justify-content:space-between;align-items:center;padding:10px 0}
+
+/* Pills */
+.pill-green{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:var(--abg);color:var(--accent)}
+.pill-yellow{display:inline-flex;align-items:center;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;background:var(--ybg);color:var(--yellow)}
+
+/* Progress */
+.prog-track{height:7px;background:var(--border);border-radius:99px;overflow:hidden;margin:10px 0 6px}
+.prog-fill{height:100%;background:linear-gradient(90deg,#00B37A,#1A6FE8);border-radius:99px;transition:width 0.6s cubic-bezier(.4,0,.2,1)}
+
+/* Stat cards */
+.stat-row{display:flex;gap:10px;margin-bottom:12px}
+.stat-card{flex:1;background:var(--muted);border:1px solid var(--border);border-radius:14px;padding:12px 14px}
+.stat-card.green{background:linear-gradient(135deg,#EBF9F4,#E0F5EE);border-color:rgba(0,179,122,0.2)}
+.stat-lbl{font-size:10px;color:var(--dim);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:4px;font-weight:700}
+.stat-val{font-size:20px;font-weight:900;letter-spacing:-0.5px}
+.stat-val.green{color:var(--accent)}
+.stat-val.red{color:var(--red)}
+
+/* Avatar */
+.avatar{width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:800;flex-shrink:0}
+.av-green{background:var(--abg);border:1.5px solid var(--accent);color:var(--accent)}
+.av-yellow{background:var(--ybg);border:1.5px solid rgba(196,124,10,0.4);color:var(--yellow)}
+
+/* Link box */
+.link-box{background:var(--muted);border:1px dashed var(--border);border-radius:10px;padding:14px 16px;margin-bottom:14px}
+
+/* AI log */
+.ai-log{background:var(--muted);border:1px solid var(--border);border-radius:12px;padding:16px;font-family:monospace;font-size:12px;color:var(--mid);min-height:60px;white-space:pre-wrap;word-break:break-all;line-height:1.6}
+.dots{display:flex;gap:8px;justify-content:center;margin-top:20px}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--accent);animation:blink 1.2s ease-in-out infinite}
+@keyframes blink{0%,100%{opacity:.15;transform:scale(.7)}50%{opacity:1;transform:scale(1)}}
+
+/* Big amount */
+.big-amt{font-size:44px;font-weight:900;color:var(--accent);letter-spacing:-2px;line-height:1}
+
+/* Nav — safe area for iPhone home indicator */
+.nav{
+  position:fixed;bottom:0;left:0;right:0;
+  background:#fff;border-top:1px solid var(--border);
+  display:flex;
+  padding:8px 0 calc(16px + env(safe-area-inset-bottom));
+  box-shadow:0 -2px 16px rgba(0,0,0,0.05);
+  z-index:100;
+}
+.nbtn{flex:1;background:none;border:none;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;padding:4px 0;min-height:48px;-webkit-tap-highlight-color:transparent}
+.nic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;border:1px solid transparent;color:var(--dim);transition:all 0.15s}
+.nic.active{background:var(--abg);border-color:rgba(0,179,122,0.2);color:var(--accent)}
+.nlbl{font-size:10px;font-family:inherit;color:var(--dim);font-weight:400;letter-spacing:0.3px}
+.nlbl.active{color:var(--accent);font-weight:700}
+
+/* Saved badge */
+.saved-badge{font-size:11px;color:var(--accent);font-weight:700;background:var(--abg);padding:3px 10px;border-radius:20px}
+
+/* Copy btn inline */
+.copy-inline{flex-shrink:0;padding:12px 14px;border-radius:10px;border:1px solid var(--border);background:var(--muted);color:var(--mid);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;white-space:nowrap;min-height:48px}
+
+/* Session tabs */
+.sess-tab{flex-shrink:0;padding:8px 14px;border-radius:10px;border:1.5px solid var(--border);background:#fff;color:var(--mid);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit;text-align:left;min-width:110px;transition:all 0.15s}
+.sess-tab.active{border-color:var(--accent);background:var(--abg);color:var(--accent)}
+.sess-tab-date{font-size:10px;color:var(--dim);font-weight:400;margin-top:2px}
+.sess-tab.active .sess-tab-date{color:var(--accent);opacity:0.7}
+
+/* PIN */
+.pin-dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--border);background:transparent;transition:all 0.15s}
+.pin-dot.filled{background:var(--accent);border-color:var(--accent)}
+.pin-dot.shake{animation:shake 0.3s ease}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-6px)}75%{transform:translateX(6px)}}
+.pin-key{padding:18px 8px;border-radius:12px;border:1px solid var(--border);background:var(--muted);font-size:24px;font-weight:700;font-family:inherit;cursor:pointer;transition:all 0.12s;color:var(--text);min-height:56px;-webkit-tap-highlight-color:transparent}
+.pin-key:active{background:var(--accent);color:#fff;border-color:var(--accent);transform:scale(0.94)}
+
+.mt16{margin-top:16px}
+.mt10{margin-top:10px}
+.note{font-size:11px;color:var(--dim);text-align:center;padding:4px 0 8px}
+
+/* Invite gate */
+.invite-gate{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#00B37A 0%,#007A50 100%);display:flex;align-items:center;justify-content:center;padding:24px}
+.invite-box{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:24px;padding:36px 28px;width:100%;max-width:380px;text-align:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
+.invite-input{width:100%;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:12px;color:#fff;padding:14px 18px;font-size:18px;font-family:inherit;font-weight:700;letter-spacing:3px;text-align:center;outline:none;text-transform:uppercase;transition:border-color 0.2s;caret-color:#fff}
+.invite-input:focus{border-color:#fff;background:rgba(255,255,255,0.2)}
+.invite-input::placeholder{letter-spacing:1px;font-weight:400;font-size:14px;text-transform:none;opacity:0.6;color:#fff}
+.invite-input.error{border-color:#FFD6D6;animation:shake 0.3s ease}
+</style>
+</head>
+<body>
+
+<!-- ══ INVITE GATE (Biller only) ══ -->
+<div id="inviteGate" class="invite-gate" style="display:none">
+  <div class="invite-box">
+
+    <!-- Logo -->
+    <div style="margin:0 auto 28px;text-align:center">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="56" height="56" style="display:block;margin:0 auto 10px">
+        <rect x="0" y="0" width="40" height="40" rx="11" fill="rgba(255,255,255,0.18)"/>
+        <path d="M29 10 Q29 6 22 6 Q15 6 15 11 Q15 17 22 19 L28 21" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
+        <line x1="26" y1="22" x2="22" y2="24" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2 3" opacity="0.55"/>
+        <path d="M20 26 L26 27 Q33 29 33 34 Q33 39 26 39 Q19 39 19 34" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+      </svg>
+      <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-0.8px">Splitz</div>
+    </div>
+
+    <div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;margin-bottom:8px">Biller Access</div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.75);margin-bottom:28px;line-height:1.6">This area is for billers only.<br/>Enter your invite code to continue.</div>
+
+    <!-- Code input -->
+    <input type="text" id="inviteInput" class="invite-input" placeholder="Enter invite code" maxlength="20"
+      oninput="this.value=this.value.toUpperCase()"
+      onkeydown="if(event.key==='Enter') checkInviteCode()"/>
+
+    <div id="inviteError" style="display:none;font-size:12px;color:#FFD6D6;margin-top:8px;font-weight:600">
+      ❌ Invalid code — please try again
+    </div>
+
+    <button onclick="checkInviteCode()" style="width:100%;margin-top:16px;padding:15px;border-radius:12px;border:none;background:#fff;color:#00B37A;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
+      Enter →
+    </button>
+
+    <div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.2)">
+      <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:12px">Are you a splitter paying a bill?</div>
+      <button onclick="enterAsSplitter()" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.4);background:transparent;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
+        Open as Splitter
+      </button>
+    </div>
+
+  </div>
+</div>
+
+<!-- HEADER -->
+<div class="hdr">
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 44" width="180" height="36">
+    <defs>
+      <linearGradient id="hg1" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="#00C882"/>
+        <stop offset="100%" stop-color="#009A67"/>
+      </linearGradient>
+    </defs>
+    <!-- Icon background -->
+    <rect x="0" y="2" width="40" height="40" rx="11" fill="rgba(255,255,255,0.22)"/>
+    <!-- Top arc of S (bright white) -->
+    <path d="M29 10 Q29 6 22 6 Q15 6 15 11 Q15 17 22 19 L28 21"
+      fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
+    <!-- Dashed gap connector -->
+    <line x1="26" y1="22" x2="22" y2="24" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2 3" opacity="0.55"/>
+    <!-- Bottom arc of S (dimmer) -->
+    <path d="M20 26 L26 27 Q33 29 33 34 Q33 39 26 39 Q19 39 19 34"
+      fill="none" stroke="white" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+    <!-- Wordmark -->
+    <text x="50" y="29" font-family="'Plus Jakarta Sans',sans-serif" font-size="22" font-weight="900" letter-spacing="-0.7" fill="white">Splitz</text>
+    <rect x="50" y="33" width="32" height="2.5" rx="1.2" fill="rgba(255,255,255,0.4)"/>
+  </svg>
+  <div class="badge">Beta</div>
+</div>
+
+<!-- ══ Onboarding Modal ══ -->
+<div id="onboardModal" style="position:fixed;inset:0;z-index:999;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:540px;padding:32px 24px 40px;animation:slideUp 0.35s cubic-bezier(.4,0,.2,1)">
+
+    <!-- Logo mark -->
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#00C882,#009A67);display:flex;align-items:center;justify-content:center;margin:0 auto 12px;box-shadow:0 6px 20px rgba(0,179,122,0.25)">
+        <svg viewBox="0 0 40 40" width="36" height="36" xmlns="http://www.w3.org/2000/svg">
+          <!-- Top arc of S -->
+          <path d="M28 9 Q28 4 20 4 Q12 4 12 10 Q12 16 20 18 L27 20"
+            fill="none" stroke="white" stroke-width="4.5" stroke-linecap="round"/>
+          <!-- Dashed gap -->
+          <line x1="25" y1="21" x2="21" y2="23" stroke="white" stroke-width="1.6" stroke-linecap="round" stroke-dasharray="2 3" opacity="0.55"/>
+          <!-- Bottom arc of S -->
+          <path d="M19 25 L25 26 Q32 28 32 33 Q32 38 24 38 Q16 38 16 33"
+            fill="none" stroke="white" stroke-width="4.5" stroke-linecap="round" opacity="0.55"/>
+        </svg>
+      </div>
+      <div style="font-size:22px;font-weight:900;letter-spacing:-0.6px;color:#0F1F3D">Welcome to Splitz!</div>
+      <div style="font-size:14px;color:#5A6A85;margin-top:4px">The easiest way to split bills with friends</div>
+    </div>
+
+    <!-- Steps -->
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:28px">
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#EBF9F4,#D6F3E8);border:1px solid rgba(0,179,122,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">📷</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#0F1F3D;margin-bottom:2px">Upload your receipt</div>
+          <div style="font-size:13px;color:#5A6A85;line-height:1.5">AI reads and itemizes it for you</div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#EAECF0;margin-left:50px"></div>
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#EBF9F4,#D6F3E8);border:1px solid rgba(0,179,122,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🔗</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#0F1F3D;margin-bottom:2px">Send the link</div>
+          <div style="font-size:13px;color:#5A6A85;line-height:1.5">Friends pay you directly — track it all in the dashboard</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CTA -->
+    <button onclick="closeOnboard()" style="width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,#00B37A,#008F60);color:#fff;font-size:16px;font-weight:800;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.2px;box-shadow:0 4px 20px rgba(0,179,122,0.3)">
+      Got it, let's go! →
+    </button>
+
+    <div style="text-align:center;font-size:11px;color:#9AAABE;margin-top:12px">Tap anywhere outside to dismiss</div>
+  </div>
+</div>
+
+<style>
+@keyframes slideUp {
+  from { transform: translateY(100%); opacity: 0; }
+  to   { transform: translateY(0);    opacity: 1; }
+}
+@keyframes fadeOut {
+  from { opacity:1; }
+  to   { opacity:0; }
+}
+</style>
+
+<!-- ══ S0: Setup ══ -->
+<div id="s0" class="screen active">
+  <div class="ptitle">New Biller Split</div>
+  <div class="psub">The easiest way to split bills with friends.</div>
+
+  <!-- Upload -->
+  <div class="card mt16">
+    <div class="slabel">Receipt</div>
+    <p style="font-size:12px;color:var(--mid);margin-bottom:14px;line-height:1.6">📸 Photo auto-deleted in <span style="color:var(--yellow);font-weight:700">3 days</span>. Itemized data kept.</p>
+    <label class="upload-lbl" for="fileInput">📷 Upload Receipt</label>
+    <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)"/>
+  </div>
+
+  <!-- Split between -->
+  <div class="card">
+    <div class="slabel">Split Between</div>
+    <div class="counter">
+      <button class="cbtn" onclick="changeNum(-1)">−</button>
+      <div class="cnum">
+        <div class="cnumval" id="numDisplay">4</div>
+        <div class="cnumsub">people incl. you</div>
+      </div>
+      <button class="cbtn" onclick="changeNum(1)">+</button>
+    </div>
+  </div>
+
+  <!-- Payment — compact chip if saved, full form if not -->
+  <div id="gcashSavedChip" style="display:none">
+    <div class="card" style="display:flex;justify-content:space-between;align-items:center">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="width:36px;height:36px;border-radius:10px;background:var(--abg);border:1px solid rgba(0,179,122,0.2);display:flex;align-items:center;justify-content:center;font-size:18px">💳</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--text)" id="gcashChipNum">—</div>
+          <div style="font-size:11px;color:var(--dim)" id="gcashChipName">—</div>
+        </div>
+      </div>
+      <button onclick="editGcash()" style="font-size:12px;color:var(--mid);background:var(--muted);border:1px solid var(--border);border-radius:8px;padding:6px 12px;cursor:pointer;font-family:inherit;font-weight:600">Edit</button>
+    </div>
+  </div>
+
+  <div id="gcashFullForm">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+        <div class="slabel" style="margin-bottom:0">Receive Payment Via</div>
+        <div class="saved-badge" id="savedBadge" style="display:none">✓ Saved</div>
+      </div>
+      <div class="field">
+        <label class="flabel">Payment Method <span style="color:var(--dim);font-size:11px">optional</span></label>
+        <div style="position:relative">
+          <input type="text" id="paymentMethod" placeholder="Search (e.g. GCash, BDO, Maya...)" autocomplete="off"
+            oninput="filterPayMethods(this.value)"
+            onfocus="showPayList()"
+            style="padding-right:36px"
+          />
+          <span style="position:absolute;right:12px;top:50%;transform:translateY(-50%);color:var(--dim);font-size:12px;pointer-events:none">▾</span>
+          <div id="payMethodList" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.1);z-index:999;max-height:240px;overflow-y:auto"></div>
+        </div>
+      </div>
+      <div class="field">
+        <label class="flabel">Account Number <span style="color:var(--dim);font-size:11px">optional</span></label>
+        <input type="text" id="gcashNum" placeholder="09XX XXX XXXX or account number"/>
+      </div>
+      <div class="field">
+        <label class="flabel">Account Name <span style="color:var(--dim);font-size:11px">optional</span></label>
+        <input type="text" id="gcashName" placeholder="Your full name"/>
+      </div>
+
+      <!-- QR Upload -->
+      <div class="field">
+        <label class="flabel">Payment QR Code <span style="color:var(--dim);font-size:11px">optional</span></label>
+        <div id="qrUploadArea">
+          <label for="qrFileInput" id="qrUploadLabel" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--muted);border:1.5px dashed var(--border);border-radius:10px;cursor:pointer;transition:border-color 0.15s">
+            <span style="font-size:22px">📲</span>
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text)">Upload QR Code</div>
+              <div style="font-size:11px;color:var(--dim);margin-top:2px">Your payment QR from GCash, Maya, etc.</div>
+            </div>
+          </label>
+          <input type="file" id="qrFileInput" accept="image/*" style="display:none" onchange="handleQrUpload(event)"/>
+        </div>
+        <!-- QR Preview -->
+        <div id="qrPreview" style="display:none;margin-top:10px;text-align:center">
+          <div style="position:relative;display:inline-block">
+            <img id="qrPreviewImg" src="" alt="QR Preview" style="width:140px;height:140px;object-fit:contain;border-radius:12px;border:1.5px solid var(--border);background:#fff;padding:8px"/>
+            <button onclick="removeQr()" style="position:absolute;top:-8px;right:-8px;width:22px;height:22px;border-radius:50%;background:var(--red);color:#fff;border:none;cursor:pointer;font-size:12px;display:flex;align-items:center;justify-content:center;font-weight:900;line-height:1">×</button>
+          </div>
+          <div style="font-size:11px;color:var(--accent);margin-top:6px;font-weight:600">✓ QR ready</div>
+        </div>
+      </div>
+      <div style="display:flex;gap:8px;margin-top:8px">
+        <button class="btn btn-green-outline" id="saveGcashBtn" style="flex:1;padding:10px;font-size:13px" onclick="saveGcash()">💾 Save for next time</button>
+        <button class="btn btn-ghost" id="clearBtn" style="display:none;width:auto;padding:10px 14px;font-size:13px" onclick="clearGcash()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- AI loader (hidden) -->
+  <div id="aiSection" style="display:none">
+    <div class="card" style="text-align:center;padding:28px 18px">
+      <div style="font-size:36px;margin-bottom:12px">🤖</div>
+      <div style="font-size:16px;font-weight:800;margin-bottom:6px">Reading receipt…</div>
+      <div style="color:var(--mid);font-size:13px;margin-bottom:16px">AI is scanning &amp; itemizing your bill</div>
+      <div class="ai-log" id="aiLog">Analyzing image…</div>
+      <div class="dots">
+        <div class="dot" style="animation-delay:0s"></div>
+        <div class="dot" style="animation-delay:0.2s"></div>
+        <div class="dot" style="animation-delay:0.4s"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Receipt summary (hidden until loaded) -->
+  <div id="summarySection" style="display:none">
+    <div style="font-size:18px;font-weight:800;letter-spacing:-0.4px;margin:8px 0 12px">Receipt Summary</div>
+
+    <!-- Bill label -->
+    <div class="card">
+      <label class="flabel">Bill Label <span style="color:var(--dim);font-size:11px">optional</span></label>
+      <input type="text" id="billLabel" placeholder="e.g. NamNam dinner with college friends" oninput="onBillLabelChange()"/>
+    </div>
+
+    <div class="card">
+      <div class="slabel">Split Method</div>
+      <div class="split-toggle">
+        <button class="stab active" id="tabItem" onclick="setMode('item')">🧾 By Item</button>
+        <button class="stab" id="tabEqual" onclick="setMode('equal')">⚖️ Split Equally</button>
+      </div>
+      <div id="modeItem">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div class="slabel" style="margin-bottom:0">Items</div>
+          <button onclick="addItem()" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:700">+ Add Item</button>
+        </div>
+        <div style="font-size:11px;color:var(--mid);margin-bottom:10px">✏️ Item names and prices are editable — tap to make changes.</div>
+        <div id="itemList"></div>
+      </div>
+      <div id="modeEqual" style="display:none">
+        <div class="eq-box">
+          <div style="font-size:12px;color:var(--mid);margin-bottom:8px">Each person pays</div>
+          <div class="eq-amt" id="eqAmt">—</div>
+          <div class="eq-sub" id="eqSub">—</div>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin:12px 0 4px">
+          <div style="font-size:11px;color:var(--mid);font-weight:600">📋 Bill breakdown</div>
+          <button onclick="addItem()" style="font-size:12px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:700">+ Add Item</button>
+        </div>
+        <div style="font-size:11px;color:var(--mid);margin-bottom:8px">✏️ Item names and prices are editable — tap to make changes.</div>
+        <div id="itemListEqual"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="row" style="padding-top:0"><div style="color:var(--mid);font-size:14px">Subtotal</div><div style="font-size:14px;font-weight:600" id="subtotalEl">—</div></div>
+      <div class="divider"></div>
+      <div class="row"><div style="color:var(--mid);font-size:14px" id="svcLabel">Service Charge (10%)</div><div style="font-size:14px;font-weight:600" id="svcEl">—</div></div>
+      <div class="divider"></div>
+      <div class="row" style="padding-bottom:0"><div style="font-weight:700;font-size:16px">Total</div><div style="font-size:28px;font-weight:900;color:var(--accent);letter-spacing:-1px" id="totalEl">—</div></div>
+    </div>
+
+    <button class="btn btn-primary" onclick="generateAndShow()">Generate Link →</button>
+    <div class="note mt10">🔗 Link expires 7 days &nbsp;·&nbsp; 📸 Photo deleted in 3 days</div>
+
+    <!-- Link + dashboard — shown after Generate is tapped -->
+    <div id="linkReadySection" style="display:none;margin-top:12px">
+      <div class="card" style="background:linear-gradient(135deg,#EBF9F4,#E0F5EE);border-color:rgba(0,179,122,0.2)">
+        <div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:6px">🔗 Link Ready!</div>
+        <div style="font-size:13px;color:var(--accent);font-weight:600;word-break:break-all;margin-bottom:12px" id="lnkUrl">splitsies.app/pay/—</div>
+        <div id="lnkEqualHint" style="display:none;font-size:12px;color:var(--accent);font-weight:600;margin-bottom:10px"></div>
+        <button class="btn btn-primary" id="copyLinkBtn" onclick="copyLink()" style="margin-bottom:8px">📋 Copy & Send to Friends</button>
+        <button class="btn" onclick="openDash()" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#00B37A,#008F60);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(0,179,122,0.2)">📊 Track Payments in Dashboard →</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- S3 kept as stub for nav compat -->
+<div id="s3" class="screen" style="display:none!important"></div>
+
+<!-- ══ Splitter Onboarding Modal ══ -->
+<div id="splitterModal" style="position:fixed;inset:0;z-index:999;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:540px;padding:32px 24px 40px;animation:slideUp 0.35s cubic-bezier(.4,0,.2,1)">
+
+    <!-- Greeting -->
+    <div style="text-align:center;margin-bottom:24px">
+      <div style="font-size:36px;margin-bottom:10px">👋</div>
+      <div style="font-size:22px;font-weight:900;letter-spacing:-0.6px;color:#0F1F3D;margin-bottom:6px">Hello, Splitter!</div>
+      <div style="font-size:14px;color:#5A6A85;line-height:1.6">A bill has been sent to you for payment.<br/>Here's how it works — it's super quick!</div>
+    </div>
+
+    <!-- Steps -->
+    <div style="display:flex;flex-direction:column;gap:14px;margin-bottom:28px">
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#EBF9F4,#D6F3E8);border:1px solid rgba(0,179,122,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">✍️</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#0F1F3D;margin-bottom:2px">Enter your name</div>
+          <div style="font-size:13px;color:#5A6A85;line-height:1.5">So the biller knows who's paying</div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#EAECF0;margin-left:50px"></div>
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#EBF9F4,#D6F3E8);border:1px solid rgba(0,179,122,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🍽️</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#0F1F3D;margin-bottom:2px">Pick your order</div>
+          <div style="font-size:13px;color:#5A6A85;line-height:1.5">Choose the items you ate from the bill</div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#EAECF0;margin-left:50px"></div>
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#EBF9F4,#D6F3E8);border:1px solid rgba(0,179,122,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">💸</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#0F1F3D;margin-bottom:2px">Pay and confirm</div>
+          <div style="font-size:13px;color:#5A6A85;line-height:1.5">No receipt upload needed!</div>
+        </div>
+      </div>
+
+    </div>
+
+    <!-- CTA -->
+    <button onclick="closeSplitterOnboard()" style="width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,#00B37A,#008F60);color:#fff;font-size:16px;font-weight:800;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;letter-spacing:-0.2px;box-shadow:0 4px 20px rgba(0,179,122,0.3)">
+      Got it, let's go! →
+    </button>
+
+    <div style="text-align:center;font-size:11px;color:#9AAABE;margin-top:12px">Tap anywhere outside to dismiss</div>
+  </div>
+</div>
+
+<!-- ══ S4: Guest Pick Orders ══ -->
+<div id="s4" class="screen">
+  <div style="font-size:13px;color:var(--dim);padding-top:24px;padding-bottom:2px">Bill split by <span style="color:var(--accent);font-weight:700" id="guestHost">—</span></div>
+  <div class="ptitle" id="s4Title" style="padding-top:4px">Pick Your Orders</div>
+  <div class="psub" id="s4Sub">Tap what you ate · service charge included</div>
+
+  <div class="card mt16">
+    <label class="flabel">Your Name</label>
+    <input type="text" id="guestName" placeholder="e.g. Julius" oninput="updateGuestCalc()"/>
+    <div id="savedNameHint" style="display:none;font-size:11px;color:var(--accent);margin-top:6px;font-weight:600">✓ Name auto-filled from last time · <span onclick="clearSavedName()" style="color:var(--dim);cursor:pointer;text-decoration:underline">Clear</span></div>
+  </div>
+
+  <!-- Who already paid -->
+  <div id="alreadyPaidSection" style="display:none">
+    <div class="card" style="background:var(--muted);border-style:dashed">
+      <div style="font-size:12px;font-weight:700;color:var(--mid);margin-bottom:8px">✅ Already paid</div>
+      <div id="alreadyPaidList"></div>
+    </div>
+  </div>
+
+  <div id="itemPickSection">
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+        <div class="slabel" style="margin-bottom:0">Order Items</div>
+        <div style="font-size:10px;color:var(--dim);font-weight:600;background:var(--muted);padding:3px 8px;border-radius:20px;border:1px solid var(--border)">VAT inclusive</div>
+      </div>
+      <div style="font-size:11px;color:var(--mid);margin-bottom:10px;line-height:1.5">All prices already include VAT. Service charge will be calculated as you select items.</div>
+      <div id="guestItems"></div>
+    </div>
+    <div class="card" id="guestCalcCard" style="display:none">
+      <div class="row" style="padding-top:0">
+        <div style="color:var(--mid);font-size:14px">Your subtotal <span style="font-size:11px;color:var(--dim)">(VAT incl.)</span></div>
+        <div style="font-size:14px;font-weight:600" id="gSubEl">—</div>
+      </div>
+      <div class="divider"></div>
+      <div class="row">
+        <div>
+          <div style="color:var(--mid);font-size:14px">Service charge</div>
+          <div style="font-size:10px;color:var(--dim);margin-top:1px">Proportional to your share</div>
+        </div>
+        <div style="font-size:14px;font-weight:600;color:var(--accent)" id="gSvcEl">—</div>
+      </div>
+      <div class="divider"></div>
+      <div class="row" style="padding-bottom:0">
+        <div style="font-weight:700">You pay</div>
+        <div style="font-size:28px;font-weight:900;color:var(--accent);letter-spacing:-1px" id="gTotEl">—</div>
+      </div>
+    </div>
+  </div>
+
+  <div id="equalPaySection" style="display:none">
+    <div class="card card-green">
+      <div style="font-size:12px;color:var(--mid);margin-bottom:8px;text-align:center">Your share of the bill</div>
+      <div style="font-size:32px;font-weight:900;color:var(--accent);letter-spacing:-1px;text-align:center" id="gEqAmt">—</div>
+      <div style="font-size:12px;color:var(--mid);margin-top:4px;text-align:center" id="gEqSub">—</div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" id="payBtn" disabled onclick="goToPayment()">Pay to the biller →</button>
+</div>
+
+<!-- ══ S5: Payment ══ -->
+<div id="s5" class="screen">
+  <div class="ptitle" id="payTitle">Pay the Biller</div>
+  <div class="psub">Send the exact amount to the biller</div>
+
+  <div class="card mt16" style="text-align:center">
+    <div style="font-size:12px;color:var(--dim);letter-spacing:0.8px;text-transform:uppercase;margin-bottom:4px">Amount to Send</div>
+    <div class="big-amt" id="payAmt">—</div>
+  </div>
+
+  <!-- Payment details card -->
+  <div class="card">
+    <!-- Payment Method -->
+    <div id="payMethodSection" style="padding-bottom:12px;margin-bottom:12px;border-bottom:1px solid var(--border)">
+      <div style="font-size:11px;color:var(--dim);font-weight:600;letter-spacing:0.3px;margin-bottom:4px">PAYMENT METHOD</div>
+      <div style="font-size:17px;font-weight:800;color:var(--text)" id="payMethodDisplay">—</div>
+    </div>
+    <!-- QR Code (shown if uploaded) -->
+    <div id="payQrSection" style="display:none;margin-bottom:12px;padding-bottom:12px;border-bottom:1px solid var(--border);text-align:center">
+      <div style="font-size:11px;color:var(--dim);font-weight:600;letter-spacing:0.3px;margin-bottom:8px">SCAN TO PAY</div>
+      <div style="background:#fff;border-radius:12px;padding:12px;display:inline-block;box-shadow:0 2px 12px rgba(0,0,0,0.08)">
+        <img id="payQrImg" src="" alt="Payment QR" style="width:160px;height:160px;object-fit:contain;display:block"/>
+      </div>
+    </div>
+    <!-- Account Name -->
+    <div id="payNameSection" style="margin-bottom:12px">
+      <div style="font-size:11px;color:var(--dim);font-weight:600;letter-spacing:0.3px;margin-bottom:3px">ACCOUNT NAME</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text)" id="payGcashName">—</div>
+    </div>
+    <!-- Account Number + Copy -->
+    <div id="payNumSection" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div>
+        <div style="font-size:11px;color:var(--dim);font-weight:600;letter-spacing:0.3px;margin-bottom:3px">ACCOUNT NUMBER</div>
+        <div style="font-size:20px;font-weight:800;color:var(--accent);letter-spacing:0.5px" id="payGcashNum">—</div>
+      </div>
+      <button class="copy-inline" id="copyNumBtn" onclick="copyPayNum()">Copy</button>
+    </div>
+  </div>
+
+  <button class="btn" style="margin-bottom:12px;background:linear-gradient(135deg,#00B37A,#008F60);color:#fff;box-shadow:0 4px 16px rgba(0,179,122,0.3)" onclick="confirmSent()">✅ Done Sending? Confirm Here</button>
+
+  <div class="card card-yellow">
+    <div style="font-size:12px;color:var(--yellow);line-height:1.6">⚠️ <span id="payWarnHost">the biller</span> will confirm once they receive your payment. You'll show as <strong>Pending</strong> until then.</div>
+  </div>
+</div>
+
+<!-- ══ S6: Dashboard ══ -->
+<div id="s6" class="screen">
+  <div id="dashHead">
+    <div style="display:flex;justify-content:space-between;align-items:center;padding-top:24px;margin-bottom:2px">
+      <div style="font-size:13px;color:var(--accent);font-weight:700">👑 Host Dashboard</div>
+      <button onclick="changePin()" style="font-size:11px;color:var(--dim);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline">Change PIN</button>
+    </div>
+    <div style="font-size:24px;font-weight:900;letter-spacing:-0.8px">Payment Tracker</div>
+  </div>
+  <div id="sentHead" style="display:none;padding:32px 0 8px;text-align:center">
+    <div style="font-size:48px;margin-bottom:12px">🎉</div>
+    <div style="font-size:22px;font-weight:800;margin-bottom:6px">Payment Sent!</div>
+    <div style="color:var(--mid);font-size:14px" id="sentMsg">Waiting for the biller to confirm your payment</div>
+  </div>
+
+  <!-- Session tabs as vertical list -->
+  <div id="sessionTabsWrap" style="display:none;margin-top:16px;margin-bottom:0">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="slabel" style="margin-bottom:0">Your Bills <span id="sessionCount" style="color:var(--accent)"></span></div>
+      <button class="btn btn-primary" style="width:auto;padding:6px 14px;font-size:12px" onclick="startNewReceipt()">+ New Receipt</button>
+    </div>
+    <div id="sessionTabs"></div>
+  </div>
+
+  <!-- No sessions yet -->
+  <div id="noSessionMsg" class="card" style="margin-top:16px;text-align:center;padding:32px 18px">
+    <div style="font-size:36px;margin-bottom:12px">🧾</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:6px">No receipts yet</div>
+    <div style="font-size:13px;color:var(--mid);margin-bottom:16px">Upload a receipt and generate a link to start tracking payments</div>
+    <button class="btn btn-primary" style="max-width:200px;margin:0 auto 10px" onclick="goTo(0)">Upload Receipt</button>
+  </div>
+
+  <!-- Session detail -->
+  <div id="sessionDetail" style="display:none">
+
+    <!-- New payment alert -->
+    <div id="newPaymentAlert" style="display:none;margin-top:16px">
+      <div style="background:linear-gradient(135deg,#FFF8E6,#FFF3D6);border:1px solid rgba(196,124,10,0.25);border-radius:14px;padding:14px 16px;display:flex;align-items:center;gap:12px">
+        <div style="font-size:24px">🔔</div>
+        <div>
+          <div style="font-size:13px;font-weight:700;color:var(--yellow)">New Payment Waiting!</div>
+          <div style="font-size:12px;color:var(--mid);margin-top:2px" id="newPaymentMsg">Someone just sent their payment</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Bill label + delete -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:16px;margin-bottom:12px;gap:10px">
+      <div style="flex:1;min-width:0">
+        <div style="font-size:11px;color:var(--dim);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:4px">Current Bill</div>
+        <input id="dashBillLabel"
+          style="width:100%;font-size:16px;font-weight:800;color:var(--text);background:var(--muted);
+          border:1.5px solid var(--border);border-radius:8px;padding:7px 10px;font-family:inherit;
+          outline:none;transition:border-color 0.15s"
+          onfocus="this.style.borderColor='var(--accent)'"
+          onblur="this.style.borderColor='var(--border)';saveBillLabel(this.value)"
+          placeholder="e.g. NamNam dinner"
+        />
+      </div>
+      <button onclick="deleteBill()" style="flex-shrink:0;padding:7px 12px;border-radius:10px;border:1px solid rgba(224,59,59,0.25);background:rgba(224,59,59,0.06);color:var(--red);font-size:12px;font-weight:700;cursor:pointer;font-family:inherit">🗑 Delete</button>
+    </div>
+
+    <!-- Fully paid banner -->
+    <div id="fullyPaidBanner" style="display:none;margin-bottom:12px">
+      <div style="background:linear-gradient(135deg,#00B37A,#008F60);border-radius:16px;padding:24px 20px;text-align:center;box-shadow:0 4px 24px rgba(0,179,122,0.25)">
+        <div style="font-size:40px;margin-bottom:10px">🎉</div>
+        <div style="font-size:20px;font-weight:900;color:#fff;letter-spacing:-0.5px;margin-bottom:6px">ALL SETTLED</div>
+        <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.6">That's a wrap — all payments received and confirmed!</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:8px;margin-bottom:12px">
+      <div class="stat-card green" style="flex:1"><div class="stat-lbl">Total Bill</div><div class="stat-val green" id="dTotal" style="font-size:17px">—</div></div>
+      <div class="stat-card" id="owedCard" style="flex:1"><div class="stat-lbl">Still Owed</div><div class="stat-val" id="dOwed" style="font-size:17px">—</div></div>
+      <div class="stat-card" style="flex:1;background:linear-gradient(135deg,#FFFBF0,#FFF8E6);border-color:rgba(196,124,10,0.2)"><div class="stat-lbl" style="color:var(--yellow)">For Confirm</div><div class="stat-val" id="dPending" style="font-size:17px;color:var(--yellow)">—</div></div>
+    </div>
+    <div class="card">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--dim);margin-bottom:2px"><span>Collected</span><span style="color:var(--accent);font-weight:700" id="dPct">0%</span></div>
+      <div class="prog-track"><div class="prog-fill" id="dProg" style="width:0%"></div></div>
+      <div style="font-size:12px;color:var(--accent)" id="dConfirmed">—</div>
+    </div>
+
+    <!-- Payment link for this bill -->
+    <div class="card" id="dashLinkCard" style="display:none">
+      <div style="font-size:11px;color:var(--dim);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px">Payment Link</div>
+      <div style="font-size:13px;color:var(--accent);font-weight:600;word-break:break-all;margin-bottom:12px" id="dashLinkUrl">—</div>
+      <button class="btn btn-primary" id="copyDashLinkBtn" style="padding:10px;font-size:13px" onclick="copyDashLink()">📋 Copy & Resend Link</button>
+    </div>
+    <div class="card">
+      <div class="slabel">Who's Paid</div>
+      <div id="payList"></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" style="flex:1" onclick="goTo(4)">👤 Guest View</button>
+      <button class="btn btn-primary" style="flex:1" onclick="addGuest()">+ Add Guest</button>
+    </div>
+  </div>
+</div>
+
+<!-- ══ S7: PIN Lock ══ -->
+<div id="s7" class="screen">
+  <div style="text-align:center;padding:48px 0 24px">
+    <div style="width:64px;height:64px;border-radius:18px;background:var(--abg);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">🔐</div>
+    <div class="ptitle" style="padding-top:0">Biller Access</div>
+    <div class="psub" id="pinSub">Enter your 4-digit PIN to open the dashboard</div>
+  </div>
+
+  <div class="card">
+    <!-- PIN dots display -->
+    <div style="display:flex;justify-content:center;gap:14px;margin-bottom:20px" id="pinDots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+    </div>
+
+    <!-- Number pad -->
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px">
+      <button class="pin-key" onclick="pinKey('1')">1</button>
+      <button class="pin-key" onclick="pinKey('2')">2</button>
+      <button class="pin-key" onclick="pinKey('3')">3</button>
+      <button class="pin-key" onclick="pinKey('4')">4</button>
+      <button class="pin-key" onclick="pinKey('5')">5</button>
+      <button class="pin-key" onclick="pinKey('6')">6</button>
+      <button class="pin-key" onclick="pinKey('7')">7</button>
+      <button class="pin-key" onclick="pinKey('8')">8</button>
+      <button class="pin-key" onclick="pinKey('9')">9</button>
+      <button class="pin-key" onclick="pinKey('clear')" style="color:var(--mid);font-size:13px">Clear</button>
+      <button class="pin-key" onclick="pinKey('0')">0</button>
+      <button class="pin-key" onclick="pinKey('del')" style="font-size:18px">⌫</button>
+    </div>
+  </div>
+
+  <div id="pinSetupNote" style="display:none;text-align:center;font-size:12px;color:var(--mid);margin-top:4px">
+    First time? Set your PIN — you'll use this every time you open the dashboard.
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav" id="navBar">
+  <button class="nbtn" onclick="goToBiller(0)"><div class="nic active" id="n0">⊕</div><div class="nlbl active" id="nl0">New</div></button>
+  <button class="nbtn" onclick="billerMode?openDash():showInviteGate()"><div class="nic" id="n6">▦</div><div class="nlbl" id="nl6">Dashboard</div></button>
+</div>
+
+<script>
+// ─── Supabase config ──────────────────────────────────────────────────────────
+var SUPA_URL = 'https://fxulyvnmuftrzngxvklt.supabase.co';
+var SUPA_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImZ4dWx5dm5tdWZ0cnpuZ3h2a2x0Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODAzMDY5ODQsImV4cCI6MjA5NTg4Mjk4NH0.awxtuuAo7xfouv-QiF1pWptrwYWaqZXsuQMrLrZZKK8';
+var supaHeaders = { 'Content-Type': 'application/json', 'apikey': SUPA_KEY, 'Authorization': 'Bearer ' + SUPA_KEY };
+var currentBillerId = null; // UUID of biller row
+var currentBillId   = null; // UUID of active bill row
+var realtimeChannel = null; // Supabase realtime channel
+
+// ─── Supabase helpers ─────────────────────────────────────────────────────────
+function supa(path, method, body){
+  return fetch(SUPA_URL + '/rest/v1/' + path, {
+    method: method || 'GET',
+    headers: Object.assign({}, supaHeaders, { 'Prefer': method==='POST' ? 'return=representation' : 'return=representation' }),
+    body: body ? JSON.stringify(body) : undefined
+  }).then(function(r){ return r.json(); });
+}
+
+function supaGet(path){ return supa(path, 'GET'); }
+function supaPost(path, body){ return supa(path, 'POST', body); }
+function supaPatch(path, body){
+  return fetch(SUPA_URL + '/rest/v1/' + path, {
+    method: 'PATCH',
+    headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=representation' }),
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.json(); });
+}
+function supaDelete(path){
+  return fetch(SUPA_URL + '/rest/v1/' + path, {
+    method: 'DELETE',
+    headers: supaHeaders
+  }).then(function(r){ return r.ok; });
+}
+
+// ─── Biller profile ───────────────────────────────────────────────────────────
+function saveBillerToSupabase(cb){
+  var body = { account_number: gcashNum, account_name: gcashName, payment_method: paymentMethod, qr_url: qrDataUrl };
+  if(currentBillerId){
+    supaPatch('billers?id=eq.'+currentBillerId, body).then(function(){ if(cb) cb(); });
+  } else {
+    supaPost('billers', body).then(function(rows){
+      if(rows && rows[0]) currentBillerId = rows[0].id;
+      try{ localStorage.setItem('splitz_biller_id', currentBillerId); }catch(e){}
+      if(cb) cb();
+    });
+  }
+}
+
+function loadBillerFromSupabase(cb){
+  var saved = null;
+  try{ saved = localStorage.getItem('splitz_biller_id'); }catch(e){}
+  if(!saved){ if(cb) cb(); return; }
+  currentBillerId = saved;
+  supaGet('billers?id=eq.'+saved+'&select=*').then(function(rows){
+    if(rows && rows[0]){
+      var b = rows[0];
+      gcashNum = b.account_number||''; gcashName = b.account_name||'';
+      paymentMethod = b.payment_method||''; qrDataUrl = b.qr_url||'';
+      var en = el('gcashNum');    if(en) en.value = gcashNum;
+      var ea = el('gcashName');   if(ea) ea.value = gcashName;
+      var em = el('paymentMethod'); if(em) em.value = paymentMethod;
+      if(qrDataUrl){ var pi=el('qrPreviewImg'); if(pi) pi.src=qrDataUrl; var pv=el('qrPreview'); if(pv) pv.style.display='block'; }
+      showGcashChip(gcashNum, gcashName, paymentMethod);
+    }
+    if(cb) cb();
+  });
+}
+
+// ─── Bill (session) ───────────────────────────────────────────────────────────
+function saveBillToSupabase(cb){
+  if(!currentBillerId){ saveBillerToSupabase(function(){ saveBillToSupabase(cb); }); return; }
+  var slug = (gcashNum||'pay').replace(/\s+/g,'')+'-'+Math.random().toString(36).slice(-4);
+  var body = {
+    biller_id:  currentBillerId,
+    label:      'Bill #'+(sessions.length+1),
+    split_mode: splitMode,
+    num_people: numPeople,
+    svc:        svcFromReceipt,
+    items:      JSON.stringify(items),
+    slug:       slug
+  };
+  supaPost('bills', body).then(function(rows){
+    if(rows && rows[0]){
+      currentBillId = rows[0].id;
+      // Add to local sessions array too
+      sessions.push({
+        id:        currentBillId,
+        supaId:    currentBillId,
+        label:     body.label,
+        date:      new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric'})+'  · '+new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),
+        items:     items.slice(),
+        svc:       svcFromReceipt,
+        numPeople: numPeople,
+        splitMode: splitMode,
+        payments:  [],
+        slug:      slug
+      });
+      activeSession = sessions.length-1;
+      try{ localStorage.setItem('splitz_bill_ids', JSON.stringify(sessions.map(function(s){return s.supaId;}))); }catch(e){}
+    }
+    if(cb) cb(rows && rows[0] ? rows[0].slug : null);
+  });
+}
+
+function updateBillInSupabase(){
+  if(!currentBillId) return;
+  supaPatch('bills?id=eq.'+currentBillId, {
+    label: curSess() ? curSess().label : undefined,
+    split_mode: splitMode,
+    num_people: numPeople,
+    svc: svcFromReceipt,
+    items: JSON.stringify(items)
+  });
+}
+
+function loadBillsFromSupabase(cb){
+  var savedIds = null;
+  try{ savedIds = JSON.parse(localStorage.getItem('splitz_bill_ids')||'null'); }catch(e){}
+  if(!savedIds || !savedIds.length){ if(cb) cb(); return; }
+  supaGet('bills?id=in.('+savedIds.join(',')+')'+'&order=created_at.asc&select=*').then(function(bills){
+    if(!bills || !bills.length){ if(cb) cb(); return; }
+    var promises = bills.map(function(bill){
+      return supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
+        return { bill: bill, payments: pmts||[] };
+      });
+    });
+    Promise.all(promises).then(function(results){
+      sessions = results.map(function(r){
+        var b = r.bill;
+        var parsedItems = [];
+        try{ parsedItems = typeof b.items === 'string' ? JSON.parse(b.items) : (b.items||[]); }catch(e){}
+        return {
+          id:        b.id, supaId: b.id,
+          label:     b.label||'Bill #1',
+          date:      new Date(b.created_at).toLocaleDateString('en-PH',{month:'short',day:'numeric'})+'  · '+new Date(b.created_at).toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),
+          items:     parsedItems,
+          svc:       b.svc,
+          numPeople: b.num_people,
+          splitMode: b.split_mode,
+          slug:      b.slug,
+          payments:  r.payments.map(function(p){
+            return { id:p.id, name:p.splitter_name, items: p.item_ids||[], equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed, isHost:false };
+          })
+        };
+      });
+      if(sessions.length){
+        activeSession = sessions.length-1;
+        currentBillId = sessions[activeSession].supaId;
+        var s = sessions[activeSession];
+        items = (s.items||[]).slice(); svcFromReceipt = s.svc; numPeople = s.num_people||s.numPeople||4; splitMode = s.splitMode||'item';
+      }
+      if(cb) cb();
+    });
+  });
+}
+
+// ─── Load bill by slug (splitter opening link) ────────────────────────────────
+function loadBillBySlug(slug, cb){
+  supaGet('bills?slug=eq.'+slug+'&select=*').then(function(bills){
+    if(!bills || !bills.length){ if(cb) cb(null); return; }
+    var bill = bills[0];
+    supaGet('billers?id=eq.'+bill.biller_id+'&select=*').then(function(billers){
+      var biller = billers && billers[0] ? billers[0] : {};
+      supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
+        var parsedItems = [];
+        try{ parsedItems = typeof bill.items === 'string' ? JSON.parse(bill.items) : (bill.items||[]); }catch(e){}
+        items = parsedItems;
+        svcFromReceipt = bill.svc;
+        numPeople = bill.num_people;
+        splitMode = bill.split_mode;
+        gcashNum = biller.account_number||'';
+        gcashName = biller.account_name||'';
+        paymentMethod = biller.payment_method||'';
+        qrDataUrl = biller.qr_url||'';
+        currentBillId = bill.id;
+        // Build local session
+        sessions = [{
+          id: bill.id, supaId: bill.id,
+          label: bill.label, date: bill.created_at,
+          items: parsedItems, svc: bill.svc,
+          numPeople: bill.num_people, splitMode: bill.split_mode,
+          slug: bill.slug,
+          payments: (pmts||[]).map(function(p){
+            return { id:p.id, name:p.splitter_name, items:p.item_ids||[], equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed };
+          })
+        }];
+        activeSession = 0;
+        if(cb) cb(bill);
+      });
+    });
+  });
+}
+
+// ─── Payment (splitter confirms) ──────────────────────────────────────────────
+function savePaymentToSupabase(payment, cb){
+  if(!currentBillId){ if(cb) cb(); return; }
+  supaPost('payments', {
+    bill_id:       currentBillId,
+    splitter_name: payment.name,
+    item_ids:      payment.items||[],
+    equal_split:   payment.equalSplit||false,
+    amount:        payment.amount||0,
+    confirmed:     false
+  }).then(function(rows){
+    if(rows && rows[0] && curSess()){
+      curSess().payments.push(Object.assign({}, payment, { id: rows[0].id }));
+    }
+    if(cb) cb();
+  });
+}
+
+// ─── Confirm payment (biller) ─────────────────────────────────────────────────
+function confirmPayInSupabase(paymentId, cb){
+  supaPatch('payments?id=eq.'+paymentId, { confirmed: true }).then(function(){ if(cb) cb(); });
+}
+
+// ─── Delete bill ──────────────────────────────────────────────────────────────
+function deleteBillFromSupabase(billId, cb){
+  supaDelete('bills?id=eq.'+billId).then(function(){ if(cb) cb(); });
+}
+
+// ─── Realtime subscription ────────────────────────────────────────────────────
+function subscribeToPayments(billId){
+  if(realtimeChannel) return; // already subscribed
+  var ws = new WebSocket(
+    SUPA_URL.replace('https','wss') + '/realtime/v1/websocket?apikey=' + SUPA_KEY + '&vsn=1.0.0'
+  );
+  realtimeChannel = ws;
+  ws.onopen = function(){
+    ws.send(JSON.stringify({ topic:'realtime:public:payments:bill_id=eq.'+billId, event:'phx_join', payload:{}, ref:'1' }));
+  };
+  ws.onmessage = function(e){
+    try{
+      var msg = JSON.parse(e.data);
+      if(msg.event === 'INSERT' || msg.event === 'UPDATE'){
+        // New or updated payment — refresh dashboard if open
+        loadBillsFromSupabase(function(){
+          var s6 = el('s6');
+          if(s6 && s6.classList.contains('active')) renderDash();
+          // Show notification badge
+          showNewPaymentNotification(msg.payload && msg.payload.record ? msg.payload.record.splitter_name : 'Someone');
+        });
+      }
+    }catch(ex){}
+  };
+}
+
+function showNewPaymentNotification(name){
+  showToast('💸 ' + name + ' just sent a payment!', 'success');
+}
+
+
+var SVC        = 0.10;
+var MAX_SESSIONS = 7;
+var numPeople  = 4;
+var items      = [];
+var svcFromReceipt = null;
+var picked     = {};
+var splitMode  = 'item';
+var gcashNum   = '';
+var gcashName  = '';
+var paymentMethod = '';
+var qrDataUrl  = ''; // base64 of uploaded QR image
+var guestAmountToPay = 0;
+var pinBuffer  = '';
+var pinMode    = 'verify'; // 'set' | 'confirm' | 'verify'
+var pinTemp    = '';       // holds first entry during set flow
+
+// Sessions: each = {id, label, date, items, svc, numPeople, splitMode, payments}
+var sessions      = [];   // loaded from localStorage
+var activeSession = null; // index into sessions[]
+
+// Current session shorthand helpers
+function curSess(){ return activeSession !== null ? sessions[activeSession] : null; }
+function curPayments(){ var s=curSess(); return s ? s.payments : []; }
+
+var DEMO = [
+  {id:1,name:"Crispy Pata",price:485},
+  {id:2,name:"Sinigang na Baboy",price:320},
+  {id:3,name:"Pancit Canton",price:275},
+  {id:4,name:"Halo-Halo (×1/2)",price:95},
+  {id:5,name:"Halo-Halo (×2/2)",price:95},
+  {id:6,name:"Rice (×1/4)",price:30},
+  {id:7,name:"Rice (×2/4)",price:30},
+  {id:8,name:"Rice (×3/4)",price:30},
+  {id:9,name:"Rice (×4/4)",price:30},
+  {id:10,name:"Iced Tea (×1/3)",price:55},
+  {id:11,name:"Iced Tea (×2/3)",price:55},
+  {id:12,name:"Iced Tea (×3/3)",price:55},
+  {id:13,name:"Liempo Inihaw",price:395}
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
+function fmt(n){ var num=Number(n); if(isNaN(num)) return '₱0.00'; return '₱'+num.toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+function el(id){ return document.getElementById(id); }
+
+function getSubtotal(){ return items.reduce(function(s,i){return s+i.price;},0); }
+function getSvc(){
+  if(svcFromReceipt !== null) return svcFromReceipt;
+  return Math.round(getSubtotal() * SVC);
+}
+function getTotal(){ return getSubtotal() + getSvc(); }
+function getPerPerson(){ return numPeople > 0 ? Math.ceil(getTotal() / numPeople) : 0; }
+
+// ─── Navigation ───────────────────────────────────────────────────────────────
+// ─── PIN ──────────────────────────────────────────────────────────────────────
+function hashPin(p){ var h=0; for(var i=0;i<p.length;i++){h=(h*31+p.charCodeAt(i))>>>0;} return h.toString(36); }
+
+function getSavedPin(){ try{ return localStorage.getItem('splitsies_pin')||''; }catch(e){ return ''; } }
+
+var pinUnlocked = false; // stays true for the session once PIN entered
+
+function changePin(){
+  try{ localStorage.removeItem('splitsies_pin'); }catch(e){}
+  pinUnlocked = false;
+  openDash();
+}
+
+function openDash(){
+  // Already unlocked this session — go straight in
+  if(pinUnlocked){ goTo(6); return; }
+  var saved = getSavedPin();
+  pinBuffer = ''; pinTemp = '';
+  updatePinDots();
+  if(!saved){
+    pinMode = 'set';
+    el('pinSub').textContent = 'Create a 4-digit PIN to protect your dashboard';
+    el('pinSetupNote').style.display = 'block';
+  } else {
+    pinMode = 'verify';
+    el('pinSub').textContent = 'Enter your PIN to open the dashboard';
+    el('pinSetupNote').style.display = 'none';
+  }
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  el('s7').classList.add('active');
+  window.scrollTo(0,0);
+  updateNav(7);
+}
+
+function pinKey(k){
+  if(k==='clear'){ pinBuffer=''; updatePinDots(); return; }
+  if(k==='del'){ pinBuffer=pinBuffer.slice(0,-1); updatePinDots(); return; }
+  if(pinBuffer.length>=4) return;
+  pinBuffer += k;
+  updatePinDots();
+  if(pinBuffer.length===4) setTimeout(checkPin, 120);
+}
+
+function updatePinDots(){
+  for(var i=0;i<4;i++){
+    var d = el('pd'+i);
+    d.className = 'pin-dot'+(i<pinBuffer.length?' filled':'');
+  }
+}
+
+function shakeAndReset(msg){
+  for(var i=0;i<4;i++) el('pd'+i).className='pin-dot shake';
+  el('pinSub').textContent = msg;
+  el('pinSub').style.color = 'var(--red)';
+  setTimeout(function(){
+    pinBuffer=''; updatePinDots();
+    el('pinSub').style.color='';
+  }, 600);
+}
+
+function checkPin(){
+  if(pinMode==='set'){
+    if(pinBuffer.length<4){ shakeAndReset('Enter all 4 digits'); return; }
+    pinTemp = pinBuffer;
+    pinBuffer = '';
+    updatePinDots();
+    pinMode = 'confirm';
+    el('pinSub').textContent = 'Confirm your PIN — enter it again';
+    el('pinSub').style.color = '';
+  } else if(pinMode==='confirm'){
+    if(pinBuffer===pinTemp){
+      try{ localStorage.setItem('splitsies_pin', hashPin(pinBuffer)); }catch(e){}
+      pinUnlocked = true;
+      el('pinSub').textContent = '✓ PIN saved!';
+      el('pinSub').style.color = 'var(--accent)';
+      setTimeout(function(){ goTo(6); }, 600);
+    } else {
+      pinTemp='';
+      shakeAndReset("PINs don't match — try again");
+      setTimeout(function(){
+        pinMode='set';
+        el('pinSub').textContent='Create a 4-digit PIN to protect your dashboard';
+        el('pinSub').style.color='';
+      }, 800);
+    }
+  } else {
+    // verify mode
+    var saved = getSavedPin();
+    if(hashPin(pinBuffer)===saved){
+      pinUnlocked = true;
+      goTo(6);
+    } else {
+      shakeAndReset('Wrong PIN — try again');
+    }
+  }
+}
+
+function goTo(n){
+  // Snapshot gcash from inputs before leaving s0
+  var ni = el('gcashNum'), na = el('gcashName'), nm = el('paymentMethod');
+  if(ni) gcashNum       = ni.value.trim() || gcashNum;
+  if(na) gcashName      = na.value.trim() || gcashName;
+  if(nm) paymentMethod  = nm.value.trim() || paymentMethod;
+
+  // S3 is merged into S0 — redirect and show link section
+  if(n===3){
+    if(items.length) el('linkReadySection').style.display='block';
+    n = 0;
+  }
+
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  el('s'+n).classList.add('active');
+  window.scrollTo(0,0);
+  updateNav(n);
+  if(n===4) renderGuest();
+  if(n===6) renderDash();
+}
+
+function navTo(n){
+  if(items.length===0 && n!==0) return;
+  goTo(n);
+}
+
+function navItems(){
+  goTo(0);
+  if(items.length>0){
+    setTimeout(function(){
+      var s = el('summarySection');
+      if(s) s.scrollIntoView({behavior:'smooth',block:'start'});
+    },100);
+  }
+}
+
+function updateNav(n){
+  [0,6].forEach(function(i){
+    var ic=el('n'+i), lb=el('nl'+i);
+    if(!ic) return;
+    ic.className = 'nic' + (i===n?' active':'');
+    lb.className = 'nlbl' + (i===n?' active':'');
+  });
+}
+
+// ─── Counter ──────────────────────────────────────────────────────────────────
+function changeNum(d){
+  var next = numPeople + d;
+  if(next < 2){
+    showToast('Minimum 2 people to split a bill');
+    return;
+  }
+  numPeople = next;
+  el('numDisplay').textContent = numPeople;
+  // Always recalc if items loaded — covers both itemized and equal split displays
+  if(items.length > 0) refreshSummary();
+}
+
+
+function loadGcash(){
+  try{
+    var s = localStorage.getItem('splitz_gcash') || localStorage.getItem('splitsies_gcash');
+    if(!s) return;
+    var o = JSON.parse(s);
+    if(o.num){    gcashNum=o.num;       var e=el('gcashNum');       if(e) e.value=o.num; }
+    if(o.name){   gcashName=o.name;     var e=el('gcashName');      if(e) e.value=o.name; }
+    if(o.method){ paymentMethod=o.method; var e=el('paymentMethod'); if(e) e.value=o.method; }
+    if(o.qr){
+      qrDataUrl = o.qr;
+      var pi = el('qrPreviewImg'); if(pi) pi.src = o.qr;
+      var pv = el('qrPreview');    if(pv) pv.style.display = 'block';
+      var ul = el('qrUploadLabel');
+      if(ul){ ul.style.borderColor='var(--accent)'; ul.style.background='var(--abg)'; }
+    }
+    el('savedBadge').style.display='block';
+    el('clearBtn').style.display='block';
+    showGcashChip(o.num, o.name, o.method);
+  }catch(e){}
+}
+
+function showGcashChip(num, name, method){
+  el('gcashSavedChip').style.display = 'block';
+  el('gcashFullForm').style.display  = 'none';
+  el('gcashChipNum').textContent  = (method || 'Payment') + ' · ' + (num || '—');
+  el('gcashChipName').textContent = name || 'Account holder';
+}
+
+function editGcash(){
+  el('gcashSavedChip').style.display = 'none';
+  el('gcashFullForm').style.display  = 'block';
+}
+
+function saveGcash(){
+  var n = (el('gcashNum').value||'').trim();
+  var a = (el('gcashName').value||'').trim();
+  var m = (el('paymentMethod').value||'').trim();
+  if(!n && !a && !m && !qrDataUrl){
+    showToast('Please fill in at least one payment detail');
+    return;
+  }
+  gcashNum=n; gcashName=a; paymentMethod=m;
+  saveBillerToSupabase(function(){
+    showToast('✓ Payment details saved!', 'success');
+  });
+  try{ localStorage.setItem('splitz_gcash', JSON.stringify({num:n,name:a,method:m,qr:qrDataUrl})); }catch(e){}
+  el('savedBadge').style.display='block';
+  el('clearBtn').style.display='inline-block';
+  var b = el('saveGcashBtn');
+  var orig = b.textContent;
+  b.textContent='✓ Saved!';
+  setTimeout(function(){ b.textContent=orig; showGcashChip(n,a,m); }, 1200);
+}
+
+function clearGcash(){
+  try{ localStorage.removeItem('splitsies_gcash'); }catch(e){}
+  gcashNum=''; gcashName=''; paymentMethod=''; qrDataUrl='';
+  el('gcashNum').value='';
+  el('gcashName').value='';
+  el('paymentMethod').value='';
+  removeQr();
+  el('savedBadge').style.display='none';
+  el('clearBtn').style.display='none';
+  el('gcashSavedChip').style.display='none';
+  el('gcashFullForm').style.display='block';
+}
+
+function closeSplitterOnboard(){
+  var m = el('splitterModal');
+  if(!m) return;
+  m.style.animation = 'fadeOut 0.2s ease forwards';
+  setTimeout(function(){ m.style.display='none'; }, 200);
+  try{ localStorage.setItem('splitsies_splitter_onboarded','1'); }catch(e){}
+}
+
+function showSplitterOnboard(){
+  try{
+    if(localStorage.getItem('splitsies_splitter_onboarded')) return;
+    var m = el('splitterModal');
+    m.style.display = 'flex';
+    m.addEventListener('click', function(e){
+      if(e.target===m) closeSplitterOnboard();
+    });
+  }catch(e){}
+}
+
+
+// ─── Invite gate ──────────────────────────────────────────────────────────────
+var INVITE_CODE = 'EGS911'; // ← change this to your private code
+var billerMode  = false;       // true = biller (passed code), false = splitter only
+
+function initInviteGate(){
+  // Check if already unlocked this session
+  try{
+    if(sessionStorage.getItem('splitsies_biller')==='1'){
+      billerMode = true;
+      el('inviteGate').style.display = 'none';
+      showBillerUI();
+      return;
+    }
+  }catch(e){}
+
+  // Show gate — hide nav and main content
+  el('inviteGate').style.display = 'flex';
+  lockBillerUI();
+}
+
+function checkInviteCode(){
+  var val = (el('inviteInput').value||'').trim().toUpperCase();
+  if(val === INVITE_CODE.toUpperCase()){
+    // Correct — unlock biller
+    try{ sessionStorage.setItem('splitsies_biller','1'); }catch(e){}
+    billerMode = true;
+    var gate = el('inviteGate');
+    gate.style.opacity='0';
+    gate.style.transition='opacity 0.3s';
+    setTimeout(function(){ gate.style.display='none'; gate.style.opacity=''; }, 300);
+    showBillerUI();
+  } else {
+    // Wrong code
+    var input = el('inviteInput');
+    var err   = el('inviteError');
+    input.className = 'invite-input error';
+    err.style.display = 'block';
+    setTimeout(function(){ input.className='invite-input'; input.value=''; }, 800);
+  }
+}
+
+function enterAsSplitter(){
+  billerMode = false;
+  el('inviteGate').style.display = 'none';
+  lockBillerUI();
+  showSplitterOnboard();
+  goTo(4);
+}
+
+function showBillerUI(){
+  el('navBar').style.display = 'flex';
+  goTo(0);
+  initOnboard();
+}
+
+function lockBillerUI(){
+  // Hide biller nav items — splitters shouldn't see New or Dashboard
+  el('navBar').style.display = 'none';
+}
+
+// Intercept nav to protect biller screens
+function goToBiller(n){
+  if(!billerMode && (n===0 || n===6)){
+    // Redirect to invite gate instead
+    el('inviteGate').style.display = 'flex';
+    el('inviteInput').focus();
+    return;
+  }
+  goTo(n);
+}
+
+
+function showInviteGate(){
+  el('inviteGate').style.display = 'flex';
+  setTimeout(function(){ var i=el('inviteInput'); if(i) i.focus(); },200);
+}
+
+function showToast(msg, type){
+  var existing = document.getElementById('splitsies-toast');
+  if(existing) document.body.removeChild(existing);
+  var t = document.createElement('div');
+  t.id = 'splitsies-toast';
+  var bg = type==='success' ? '#00B37A' : type==='warn' ? '#C47C0A' : '#E03B3B';
+  t.style.cssText = 'position:fixed;bottom:calc(90px + env(safe-area-inset-bottom) + 12px);left:50%;transform:translateX(-50%);'
+    +'background:'+bg+';color:#fff;padding:12px 20px;border-radius:12px;font-size:14px;font-weight:700;'
+    +'font-family:"Plus Jakarta Sans",sans-serif;z-index:2000;box-shadow:0 4px 20px rgba(0,0,0,0.2);'
+    +'max-width:calc(100vw - 32px);text-align:center;white-space:nowrap';
+  t.textContent = msg;
+  document.body.appendChild(t);
+  setTimeout(function(){
+    if(t.parentNode){ t.style.opacity='0'; t.style.transition='opacity 0.25s'; setTimeout(function(){ if(t.parentNode) document.body.removeChild(t); },300); }
+  }, 3000);
+}
+
+function closeOnboard(){
+  var m = el('onboardModal');
+  if(!m) return;
+  m.style.animation = 'fadeOut 0.2s ease forwards';
+  setTimeout(function(){ m.style.display='none'; }, 200);
+  try{ localStorage.setItem('splitsies_onboarded','1'); }catch(e){}
+}
+
+function initOnboard(){
+  try{
+    var seen = localStorage.getItem('splitsies_onboarded');
+    if(seen){
+      el('onboardModal').style.display='none';
+    } else {
+      el('onboardModal').style.display='flex';
+      el('onboardModal').addEventListener('click', function(e){
+        if(e.target===el('onboardModal')) closeOnboard();
+      });
+    }
+  }catch(e){ el('onboardModal').style.display='none'; }
+}
+
+
+function handleQrUpload(e){
+  var file = e.target.files[0];
+  if(!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev){
+    qrDataUrl = ev.target.result;
+    el('qrPreviewImg').src = qrDataUrl;
+    el('qrPreview').style.display = 'block';
+    el('qrUploadLabel').style.borderColor = 'var(--accent)';
+    el('qrUploadLabel').style.background  = 'var(--abg)';
+  };
+  img.src = objectUrl;
+}
+
+function removeQr(){
+  qrDataUrl = '';
+  el('qrPreviewImg').src = '';
+  el('qrPreview').style.display = 'none';
+  el('qrUploadLabel').style.borderColor = '';
+  el('qrUploadLabel').style.background  = '';
+  el('qrFileInput').value = '';
+}
+
+// ─── Searchable payment method ────────────────────────────────────────────────
+var PAY_METHODS = [
+  {g:'E-Wallets',    items:['GCash','Maya','ShopeePay','GrabPay','Coins.ph','PayPal']},
+  {g:'Universal Banks', items:['BDO Unibank','BPI','Metrobank','UnionBank','Security Bank','RCBC','PNB','China Bank','EastWest Bank','PSBank']},
+  {g:'Digital Banks',   items:['Tonik','CIMB Bank PH','ING Bank PH','GoTyme Bank','UNO Digital Bank','Seabank']},
+  {g:'Rural & Thrift',  items:['Landbank','DBP','UCPB',"Robinson's Bank",'Starpay']},
+  {g:'Other',           items:['Cash','Other']}
+];
+var ALL_PAY = PAY_METHODS.reduce(function(a,g){return a.concat(g.items);}, []);
+
+function showPayList(){
+  filterPayMethods('');
+  el('payMethodList').style.display='block';
+}
+
+function filterPayMethods(q){
+  var list  = el('payMethodList');
+  var query = q.toLowerCase().trim();
+  var filtered = query ? ALL_PAY.filter(function(m){ return m.toLowerCase().indexOf(query)!==-1; }) : null;
+  var html = '';
+
+  if(filtered){
+    if(!filtered.length){
+      html='<div style="padding:12px 16px;font-size:13px;color:var(--dim)">No results — type to use custom</div>';
+    } else {
+      html = filtered.map(function(m){
+        return '<div onclick="selectPayMethod(\''+m.replace(/'/g,"\\'")+'\',this)" style="padding:11px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s" onmouseover="this.style.background=\'var(--muted)\'" onmouseout="this.style.background=\'\'">'+m+'</div>';
+      }).join('');
+    }
+  } else {
+    // Show grouped full list
+    html = PAY_METHODS.map(function(grp){
+      return '<div style="padding:6px 16px 2px;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.8px;text-transform:uppercase;background:var(--muted)">'+grp.g+'</div>'
+        + grp.items.map(function(m){
+            return '<div onclick="selectPayMethod(\''+m.replace(/'/g,"\\'")+'\',this)" style="padding:11px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s" onmouseover="this.style.background=\'var(--muted)\'" onmouseout="this.style.background=\'\'">'+m+'</div>';
+          }).join('');
+    }).join('');
+  }
+
+  list.innerHTML = html;
+  list.style.display = 'block';
+}
+
+function selectPayMethod(val){
+  el('paymentMethod').value = val;
+  el('payMethodList').style.display = 'none';
+  paymentMethod = val;
+}
+
+// Close dropdown when clicking outside
+document.addEventListener('click', function(e){
+  var list = el('payMethodList');
+  if(list && !list.contains(e.target) && e.target.id!=='paymentMethod'){
+    list.style.display='none';
+  }
+});
+
+
+function editItemName(id, val){
+  var it = items.find(function(i){return i.id===id;});
+  if(it){
+    it.name = val.trim();
+    syncItemsToSession();
+    refreshSummary();
+  }
+}
+
+function editItemPrice(id, val){
+  var it = items.find(function(i){return i.id===id;});
+  var p  = parseFloat(val);
+  if(!it) return;
+  if(isNaN(p) || p < 0){
+    showToast('Please enter a valid price (0 or more)');
+    refreshSummary();
+    return;
+  }
+  it.price = p;
+  syncItemsToSession();
+  refreshSummary();
+}
+
+function deleteItem(id){
+  if(items.length <= 1){
+    showToast('You need at least one item on the bill');
+    return;
+  }
+  items = items.filter(function(i){return i.id!==id;});
+  syncItemsToSession();
+  refreshSummary();
+}
+
+function addItem(){
+  var nextId = items.length ? Math.max.apply(null, items.map(function(i){return i.id;})) + 1 : 1;
+  items.push({id:nextId, name:'New Item', price:0});
+  syncItemsToSession();
+  refreshSummary();
+  setTimeout(function(){
+    var inputs = el('itemList').querySelectorAll('input[type=text], input:not([type])');
+    if(inputs.length) inputs[inputs.length-1].focus();
+  }, 50);
+}
+
+// Sync global items array back to the active session so dashboard stays accurate
+function syncItemsToSession(){
+  if(activeSession !== null && sessions[activeSession]){
+    sessions[activeSession].items = items.slice();
+    persistSessions();
+  }
+}
+
+// ─── Bill label ───────────────────────────────────────────────────────────────
+function saveBillLabel(val){
+  if(activeSession===null || !sessions[activeSession]) return;
+  var billNum = 'Bill #'+(activeSession+1);
+  sessions[activeSession].label = val.trim() || billNum;
+  persistSessions();
+  // Sync to Supabase
+  if(sessions[activeSession].supaId){
+    supaPatch('bills?id=eq.'+sessions[activeSession].supaId, { label: sessions[activeSession].label });
+  }
+  renderDash();
+}
+
+function onBillLabelChange(){
+  saveBillLabel(el('billLabel') ? el('billLabel').value : '');
+}
+
+// ─── Delete bill ──────────────────────────────────────────────────────────────
+function deleteBill(){
+  if(activeSession===null) return;
+  var sess    = sessions[activeSession];
+  var label   = sess.label || ('Bill #'+(activeSession+1));
+  var hasPaid = sess.payments && sess.payments.length > 0;
+  var msg     = hasPaid
+    ? sess.payments.length + ' splitter' + (sess.payments.length > 1 ? 's have' : ' has') + ' already paid for this bill. Are you sure you want to delete it? This cannot be undone.'
+    : 'Delete "' + label + '"? This cannot be undone.';
+
+  showDeleteConfirm(msg, function(){
+    var supaId = sess.supaId;
+    sessions.splice(activeSession, 1);
+    // Update bill IDs in localStorage
+    try{ localStorage.setItem('splitz_bill_ids', JSON.stringify(sessions.map(function(s){return s.supaId;}))); }catch(e){}
+    activeSession = sessions.length > 0 ? sessions.length - 1 : null;
+    if(activeSession !== null){
+      var s = sessions[activeSession];
+      items = s.items.slice(); svcFromReceipt = s.svc; numPeople = s.numPeople; splitMode = s.splitMode;
+      currentBillId = s.supaId;
+    }
+    if(supaId) deleteBillFromSupabase(supaId, function(){});
+    renderDash();
+  });
+}
+
+function showDeleteConfirm(msg, onConfirm){
+  var overlay = document.createElement('div');
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:1000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)';
+
+  overlay.innerHTML =
+    '<div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:340px;box-shadow:0 16px 48px rgba(0,0,0,0.2)">'
+    + '<div style="font-size:24px;text-align:center;margin-bottom:12px">🗑️</div>'
+    + '<div style="font-size:16px;font-weight:800;color:#0F1F3D;text-align:center;margin-bottom:8px">Delete Bill?</div>'
+    + '<div style="font-size:13px;color:#5A6A85;text-align:center;line-height:1.6;margin-bottom:24px">' + msg + '</div>'
+    + '<div style="display:flex;gap:10px">'
+    + '<button id="dcCancel" style="flex:1;padding:12px;border-radius:12px;border:1px solid #EAECF0;background:#F4F6FA;color:#5A6A85;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Cancel</button>'
+    + '<button id="dcConfirm" style="flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#E03B3B,#C02020);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Yes, Delete</button>'
+    + '</div></div>';
+
+  document.body.appendChild(overlay);
+
+  overlay.querySelector('#dcCancel').onclick  = function(){ document.body.removeChild(overlay); };
+  overlay.querySelector('#dcConfirm').onclick = function(){ document.body.removeChild(overlay); onConfirm(); };
+  overlay.onclick = function(e){ if(e.target===overlay) document.body.removeChild(overlay); };
+}
+
+// ─── Guest name auto-save ─────────────────────────────────────────────────────
+function loadSavedGuestName(){
+  try{
+    var n = localStorage.getItem('splitsies_guestname');
+    if(n){ el('guestName').value=n; el('savedNameHint').style.display='block'; updateGuestCalc(); }
+  }catch(e){}
+}
+
+function saveGuestName(name){
+  try{ localStorage.setItem('splitsies_guestname', name); }catch(e){}
+}
+
+function clearSavedName(){
+  try{ localStorage.removeItem('splitsies_guestname'); }catch(e){}
+  el('guestName').value='';
+  el('savedNameHint').style.display='none';
+  updateGuestCalc();
+}
+
+
+function handleFile(e){
+  var f = e.target.files[0];
+  if(!f) return;
+  runAI(f);
+}
+
+
+function runAI(file){
+  if(file.size > 20 * 1024 * 1024){
+    showToast('Image too large — please use a photo under 20MB');
+    return;
+  }
+
+  el('aiSection').style.display='block';
+  el('summarySection').style.display='none';
+  el('aiLog').textContent='Analyzing receipt… please wait';
+  el('aiSection').scrollIntoView({behavior:'smooth',block:'start'});
+  items=[];
+
+  // Show timeout message after 15s
+  var timeoutMsg = setTimeout(function(){
+    el('aiLog').textContent='Still working… this can take up to 30 seconds for the first scan';
+  }, 15000);
+
+  // Compress image before sending to avoid size limits
+  var img = new Image();
+  var objectUrl = URL.createObjectURL(file);
+  img.onerror = function(){ URL.revokeObjectURL(objectUrl); showToast('Could not load image — try another photo'); el('aiSection').style.display='none'; };
+  img.onload = function(){
+    URL.revokeObjectURL(objectUrl);
+    var canvas = document.createElement('canvas');
+    var maxDim = 1000;
+    var w = img.width, h = img.height;
+    if(w > maxDim || h > maxDim){
+      if(w > h){ h = Math.round(h * maxDim/w); w = maxDim; }
+      else { w = Math.round(w * maxDim/h); h = maxDim; }
+    }
+    canvas.width = w; canvas.height = h;
+    canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+    var b64 = canvas.toDataURL('image/jpeg', 0.85).split(',')[1];
+    var body = JSON.stringify({
+      model:'claude-sonnet-4-20250514',
+      max_tokens:1500,
+      stream:false,
+      messages:[{role:'user',content:[
+        {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},
+        {type:'text',text:'Look at this receipt image and extract all food and drink items with their prices.\n\nRules:\n- Extract every line item (food/drinks only)\n- Use the unit price per item (not total if qty > 1)\n- Expand abbreviations to full names\n- Skip: totals, subtotals, VAT lines, gross sales, service charge lines\n- If you see a service charge amount, extract it separately\n\nYou MUST respond with ONLY this JSON format, nothing else, no markdown:\n{"items":[{"name":"Item Name","unitPrice":100,"qty":1}],"serviceCharge":null}\n\nIf you cannot read the receipt, still return: {"items":[],"serviceCharge":null}'}
+      ]}]
+    });
+
+    fetch('https://fxulyvnmuftrzngxvklt.supabase.co/functions/v1/claude-proxy',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
+    .then(function(r){ return r.json(); })
+    .then(function(data){
+      clearTimeout(timeoutMsg);
+      try{
+        // Show full response for debugging
+        var fullResponse = JSON.stringify(data).slice(0, 300);
+        el('aiLog').textContent = 'Response: ' + fullResponse;
+
+        var text = '';
+        if(data.content && data.content[0] && data.content[0].text){
+          text = data.content[0].text;
+        } else if(data.error) {
+          el('aiLog').textContent = 'API Error: ' + JSON.stringify(data.error);
+          throw new Error('API error: ' + data.error.type);
+        }
+        el('aiLog').textContent = text;
+        // Try to extract JSON from anywhere in the response
+        var jsonMatch = text.match(/\{[\s\S]*\}/);
+        if(!jsonMatch) throw new Error('No JSON found');
+        var parsed = JSON.parse(jsonMatch[0]);
+        if(!parsed.items || !parsed.items.length) throw new Error('No items');
+        var expanded = [];
+        parsed.items.forEach(function(it){
+          var qty = it.qty||1;
+          var up  = it.unitPrice||it.price||0;
+          for(var q=0;q<qty;q++){
+            expanded.push({name: qty>1 ? it.name+' (×'+(q+1)+'/'+qty+')' : it.name, price:up});
+          }
+        });
+        items = expanded.map(function(it,i){return Object.assign({},it,{id:i+1});});
+        svcFromReceipt = (parsed.serviceCharge!=null && !isNaN(parsed.serviceCharge)) ? Number(parsed.serviceCharge) : null;
+      }catch(e){
+        // Show what AI returned for debugging
+        el('aiLog').textContent = 'AI said: ' + (text ? text.slice(0,200) : 'empty response');
+        showToast('Could not read receipt — see AI response above');
+        items = [];
+        svcFromReceipt = null;
+      }
+      if(items.length > 0){
+        el('aiSection').style.display='none';
+        showSummary();
+      }
+    })
+    .catch(function(err){
+      clearTimeout(timeoutMsg);
+      showToast('Connection error — check your internet and try again');
+      items = [];
+      svcFromReceipt = null;
+      el('aiSection').style.display='none';
+      showSummary();
+    });
+  };
+  img.src = objectUrl;
+}
+
+// ─── Summary ──────────────────────────────────────────────────────────────────
+function showSummary(){
+  el('summarySection').style.display='block';
+  refreshSummary();
+  setTimeout(function(){ el('summarySection').scrollIntoView({behavior:'smooth',block:'start'}); },80);
+}
+
+function refreshSummary(){
+  var sub = getSubtotal();
+  var svc = getSvc();
+  var tot = sub+svc;
+  var svcLbl = svcFromReceipt!==null ? 'Service Charge (from receipt)' : 'Service Charge (10%)';
+  el('svcLabel').textContent = svcLbl;
+  el('subtotalEl').textContent = fmt(sub);
+  el('svcEl').textContent = fmt(svc);
+  el('totalEl').textContent = fmt(tot);
+
+  // Items list — editable
+  el('itemList').innerHTML = items.map(function(it,idx){
+    var border = idx>0 ? 'border-top:1px solid var(--border);' : '';
+    return '<div style="'+border+'padding:'+(idx>0?'10':'0')+'px 0 10px;display:flex;align-items:center;gap:8px">'
+      +'<div style="flex:1">'
+      +'<input value="'+it.name.replace(/"/g,'&quot;')+'" onchange="editItemName('+it.id+',this.value)" '
+      +'style="width:100%;font-size:14px;font-family:inherit;color:var(--text);padding:8px 10px;'
+      +'background:var(--muted);border:1.5px solid var(--border);border-radius:8px;outline:none;'
+      +'transition:border-color 0.15s" '
+      +'onfocus="this.style.borderColor=\'var(--accent)\'" '
+      +'onblur="this.style.borderColor=\'var(--border)\'"/>'
+      +'</div>'
+      +'<input type="number" value="'+it.price+'" onchange="editItemPrice('+it.id+',this.value)" '
+      +'style="width:76px;font-size:13px;font-weight:700;color:var(--accent);background:var(--muted);'
+      +'border:1.5px solid var(--border);border-radius:8px;padding:8px 8px;text-align:right;font-family:inherit;'
+      +'outline:none;transition:border-color 0.15s" '
+      +'onfocus="this.style.borderColor=\'var(--accent)\'" '
+      +'onblur="this.style.borderColor=\'var(--border)\'"/>'
+      +'<button onclick="deleteItem('+it.id+')" style="color:var(--red);background:rgba(224,59,59,0.08);border:1px solid rgba(224,59,59,0.2);border-radius:8px;cursor:pointer;font-size:15px;padding:6px 9px;flex-shrink:0;line-height:1">×</button>'
+      +'</div>';
+  }).join('');
+
+  // Equal display
+  var per = getPerPerson();
+  el('eqAmt').textContent = fmt(per);
+  el('eqSub').textContent = fmt(tot)+' ÷ '+numPeople+' people';
+
+  // Editable item list for equal mode
+  el('itemListEqual').innerHTML = items.map(function(it,idx){
+    var border = idx>0 ? 'border-top:1px solid var(--border);' : '';
+    return '<div style="'+border+'padding:'+(idx>0?'10':'0')+'px 0 10px;display:flex;align-items:center;gap:8px">'
+      +'<div style="flex:1">'
+      +'<input value="'+it.name.replace(/"/g,'&quot;')+'" onchange="editItemName('+it.id+',this.value)" '
+      +'style="width:100%;font-size:14px;font-family:inherit;color:var(--text);padding:8px 10px;'
+      +'background:var(--muted);border:1.5px solid var(--border);border-radius:8px;outline:none;transition:border-color 0.15s" '
+      +'onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border)\'"/>'
+      +'</div>'
+      +'<input type="number" value="'+it.price+'" onchange="editItemPrice('+it.id+',this.value)" '
+      +'style="width:76px;font-size:13px;font-weight:700;color:var(--accent);background:var(--muted);'
+      +'border:1.5px solid var(--border);border-radius:8px;padding:8px 8px;text-align:right;font-family:inherit;'
+      +'outline:none;transition:border-color 0.15s" '
+      +'onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border)\'"/>'
+      +'<button onclick="deleteItem('+it.id+')" style="color:var(--red);background:rgba(224,59,59,0.08);border:1px solid rgba(224,59,59,0.2);border-radius:8px;cursor:pointer;font-size:15px;padding:6px 9px;flex-shrink:0;line-height:1">×</button>'
+      +'</div>';
+  }).join('');
+}
+
+function setMode(m){
+  splitMode = m;
+  el('tabItem').className  = 'stab' + (m==='item'?' active':'');
+  el('tabEqual').className = 'stab' + (m==='equal'?' active':'');
+  el('modeItem').style.display  = m==='item'  ? 'block':'none';
+  el('modeEqual').style.display = m==='equal' ? 'block':'none';
+  if(items.length) refreshSummary();
+}
+
+// ─── Session persistence ──────────────────────────────────────────────────────
+function persistSessions(){
+  try{ localStorage.setItem('splitsies_sessions', JSON.stringify(sessions)); }catch(e){}
+}
+
+function loadSessions(){
+  try{
+    var s = localStorage.getItem('splitsies_sessions');
+    if(!s) return;
+    sessions = JSON.parse(s);
+    if(sessions.length > 0){
+      activeSession  = sessions.length - 1;
+      var sess       = sessions[activeSession];
+      items          = (sess.items||[]).slice();
+      svcFromReceipt = sess.svc != null ? sess.svc : null;
+      numPeople      = sess.numPeople || 4;
+      splitMode      = sess.splitMode || 'item';
+    }
+  }catch(e){ sessions=[]; }
+}
+
+function startNewReceipt(){
+  // Reset working state and go back to setup
+  items=[]; svcFromReceipt=null; picked={}; splitMode='item';
+  el('summarySection').style.display='none';
+  el('aiSection').style.display='none';
+  el('linkReadySection').style.display='none';
+  el('fileInput').value='';
+  goTo(0);
+}
+
+function generateAndShow(){
+  if(!items.length){ showToast('Please upload a receipt first'); return; }
+  var subtotal = getSubtotal();
+  if(subtotal <= 0){ showToast('Please add valid item prices before generating a link'); return; }
+
+  var ni=el('gcashNum'), na=el('gcashName');
+  if(ni) gcashNum = ni.value.trim() || gcashNum;
+  if(na) gcashName = na.value.trim() || gcashName;
+
+  // Show loading state
+  var lnkSection = el('linkReadySection');
+  el('lnkUrl').textContent = 'Generating link…';
+  lnkSection.style.display = 'block';
+  setTimeout(function(){ lnkSection.scrollIntoView({behavior:'smooth',block:'start'}); }, 80);
+
+  // Save to Supabase
+  saveBillToSupabase(function(slug){
+    if(!slug){ showToast('Could not save — check your connection'); return; }
+
+    // Use real deployed URL
+    var appUrl = window.location.origin + window.location.pathname;
+    var fullUrl = appUrl + '?bill=' + slug;
+
+    el('lnkUrl').textContent = fullUrl;
+    var h = el('lnkEqualHint');
+    if(h){ h.style.display = splitMode==='equal'?'block':'none'; h.textContent = '⚖️ Equal split — '+fmt(getPerPerson())+' per person'; }
+
+    // Subscribe to realtime payments for this bill
+    subscribeToPayments(currentBillId);
+
+    // Auto-copy
+    safeCopy(fullUrl, function(){
+      var btn = el('copyLinkBtn');
+      if(btn){ btn.textContent='✓ Link Copied! Send to Friends'; }
+      setTimeout(function(){ if(btn) btn.textContent='📋 Copy & Send to Friends'; }, 3000);
+    });
+  });
+}
+
+function renderLink(){
+  var lnkEl = el('lnkUrl');
+  if(!lnkEl) return; // element only exists in s0 summary section
+  var sess = sessions[activeSession];
+  if(sess && !sess.slug){
+    sess.slug = (gcashNum||'pay').replace(/\s+/g,'')+'-'+Math.random().toString(36).slice(-4);
+    persistSessions();
+  }
+  var slug = (sess && sess.slug) || 'pay-xxxx';
+  lnkEl.textContent = 'splitsies.app/pay/'+slug;
+  var h = el('lnkEqualHint');
+  if(h){
+    h.style.display = splitMode==='equal'?'block':'none';
+    h.textContent   = '⚖️ Equal split — '+fmt(getPerPerson())+' per person';
+  }
+}
+
+function saveCurrentSession(){
+  if(!items.length) return;
+  var now     = new Date();
+  var dateStr = now.toLocaleDateString('en-PH',{month:'short',day:'numeric'})+' · '+now.toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'});
+
+  // Match existing session by id (set during generateAndShow) to avoid false matches
+  var exists = -1;
+  for(var i=0;i<sessions.length;i++){
+    if(sessions[i]._draft) { exists=i; break; }
+  }
+
+  if(exists>=0){
+    sessions[exists].numPeople = numPeople;
+    sessions[exists].splitMode = splitMode;
+    sessions[exists].svc       = svcFromReceipt;
+    sessions[exists].items     = items.slice();
+    sessions[exists]._draft    = true;
+    activeSession = exists;
+  } else {
+    if(sessions.length >= MAX_SESSIONS){
+      sessions.shift();
+      // Adjust activeSession index after shift to avoid drift
+      if(activeSession !== null && activeSession > 0) activeSession--;
+    }
+    var billNum = 'Bill #'+(sessions.length+1);
+    sessions.push({
+      id:        Date.now(),
+      label:     billNum,
+      date:      dateStr,
+      items:     items.slice(),
+      svc:       svcFromReceipt,
+      numPeople: numPeople,
+      splitMode: splitMode,
+      payments:  [],
+      _draft:    true
+    });
+    activeSession = sessions.length-1;
+  }
+  persistSessions();
+}
+
+function copyLink(){
+  var url = 'https://'+el('lnkUrl').textContent.trim();
+  var btn = el('copyLinkBtn');
+  safeCopy(url, function(){
+    btn.textContent='✓ Copied!';
+    setTimeout(function(){btn.textContent='📋 Copy Link';},2000);
+  });
+}
+
+// ─── Guest screen ─────────────────────────────────────────────────────────────
+function renderGuest(){
+  el('guestHost').textContent = gcashName || gcashNum || 'the host';
+  var claimed = getClaimedItemIds();
+  picked = {};
+
+  // Show splitter onboarding modal on first visit
+  showSplitterOnboard();
+
+  // Show who already paid
+  var sess = activeSession!==null ? sessions[activeSession] : null;
+  var paidList = sess ? sess.payments.filter(function(p){return p.confirmed;}) : [];
+  if(paidList.length>0){
+    el('alreadyPaidSection').style.display='block';
+    el('alreadyPaidList').innerHTML = paidList.map(function(p){
+      return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;last-child:margin-bottom:0">'
+        +'<div style="width:24px;height:24px;border-radius:50%;background:var(--abg);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--accent)">'+p.name[0].toUpperCase()+'</div>'
+        +'<div style="font-size:13px;font-weight:600;color:var(--text)">'+p.name+'</div>'
+        +'<span style="margin-left:auto;font-size:11px;color:var(--accent);font-weight:700">✓ Paid</span>'
+        +'</div>';
+    }).join('');
+  } else {
+    el('alreadyPaidSection').style.display='none';
+  }
+
+  // Auto-load saved name
+  loadSavedGuestName();
+
+  if(splitMode==='equal'){
+    el('s4Title').textContent='Your Bill Share';
+    el('s4Sub').textContent='The bill is split equally '+numPeople+' ways';
+    el('itemPickSection').style.display='none';
+    el('equalPaySection').style.display='block';
+    el('gEqAmt').textContent=fmt(getPerPerson());
+    var note = getTotal() % numPeople !== 0 ? ' (rounded up)' : '';
+    el('gEqSub').textContent=fmt(getTotal())+' ÷ '+numPeople+' people'+note;
+    updateGuestCalc();
+  } else {
+    el('s4Title').textContent='Pick Your Orders';
+    el('s4Sub').textContent='Tap what you ate · VAT inclusive · service charge added';
+    el('itemPickSection').style.display='block';
+    el('equalPaySection').style.display='none';
+    renderGuestItems();
+  }
+}
+
+function getClaimedItemIds(){
+  var claimed = {};
+  var sess = curSess();
+  if(!sess) return claimed;
+  (sess.payments||[]).forEach(function(p){
+    (p.items||[]).forEach(function(id){ claimed[id] = true; });
+  });
+  return claimed;
+}
+
+function renderGuestItems(){
+  var claimed  = getClaimedItemIds();
+  var available = items.filter(function(it){ return !claimed[it.id]; });
+
+  if(available.length === 0){
+    el('guestItems').innerHTML =
+      '<div style="text-align:center;padding:20px 0;color:var(--dim);font-size:13px">🎉 All items have been claimed!</div>';
+    updateGuestCalc();
+    return;
+  }
+
+  el('guestItems').innerHTML = available.map(function(it,idx){
+    return '<div class="item-row" id="ir'+it.id+'" onclick="toggleItem('+it.id+')">'
+      +'<div style="display:flex;gap:12px;align-items:center">'
+      +'<div class="ichk" id="ic'+it.id+'"></div>'
+      +'<div style="font-size:14px;color:var(--mid)" id="in'+it.id+'">'+it.name+'</div>'
+      +'</div>'
+      +'<div style="font-size:14px;font-weight:700;color:var(--dim)" id="ip'+it.id+'">'+fmt(it.price)+'</div>'
+      +'</div>'
+      +(idx<available.length-1?'<div style="height:1px;background:var(--border);margin:0 -8px"></div>':'');
+  }).join('');
+  updateGuestCalc();
+}
+
+function toggleItem(id){
+  picked[id] = !picked[id];
+  var on = picked[id];
+  var row = el('ir'+id); var chk = el('ic'+id); var nm = el('in'+id); var pr = el('ip'+id);
+  if(row) row.className = 'item-row'+(on?' on':'');
+  if(chk){ chk.className='ichk'+(on?' on':''); chk.textContent=on?'✓':''; }
+  if(nm)  nm.style.color = on?'var(--text)':'var(--mid)';
+  if(pr)  pr.style.color = on?'var(--accent)':'var(--dim)';
+  updateGuestCalc();
+}
+
+function updateGuestCalc(){
+  var name = (el('guestName').value||'').trim();
+  var btn  = el('payBtn');
+  var isEq = splitMode==='equal';
+  if(isEq){
+    btn.textContent = name ? 'Pay '+fmt(getPerPerson())+' to the biller →' : 'Pay to the biller →';
+    btn.disabled = !name;
+    return;
+  }
+  // Use full subtotal for proportional SC (so proportions stay correct)
+  var allSub   = getSubtotal();
+  var gSub     = items.reduce(function(s,it){ return s+(picked[it.id]?it.price:0); },0);
+  var gSvc     = allSub>0 ? Math.round((gSub/allSub)*getSvc()) : 0;
+  var gTot     = gSub+gSvc;
+  var hasItems = Object.keys(picked).some(function(k){return picked[k];});
+  var card     = el('guestCalcCard');
+  if(hasItems){
+    card.style.display='block';
+    el('gSubEl').textContent = fmt(gSub);
+    el('gSvcEl').textContent = fmt(gSvc);
+    el('gTotEl').textContent = fmt(gTot);
+    btn.textContent = 'Pay '+fmt(gTot)+' to the biller →';
+  } else {
+    card.style.display='none';
+    btn.textContent = 'Pay to the biller →';
+  }
+  btn.disabled = !(name && hasItems);
+}
+
+// ─── Payment screen ───────────────────────────────────────────────────────────
+function goToPayment(){
+  var name = (el('guestName').value||'').trim();
+  var isEq = splitMode==='equal';
+  var gTot;
+  if(isEq){
+    gTot = getPerPerson();
+  } else {
+    var allSub = getSubtotal();
+    var gSub   = items.reduce(function(s,it){return s+(picked[it.id]?it.price:0);},0);
+    gTot = gSub + (allSub>0 ? Math.round((gSub/allSub)*getSvc()) : 0);
+  }
+  if(!name || (!isEq && !Object.keys(picked).some(function(k){return picked[k];}))) return;
+
+  // NEGATIVE: biller has no payment info at all
+  if(!gcashNum && !gcashName && !qrDataUrl && !paymentMethod){
+    showToast('The biller hasn\'t set up payment details yet');
+    return;
+  }
+
+  guestAmountToPay = gTot;
+  el('payTitle').textContent    = 'Pay the Biller';
+  el('payAmt').textContent      = fmt(gTot);
+  // Show payment method only if biller set one
+  if(paymentMethod){
+    el('payMethodDisplay').textContent = paymentMethod;
+    el('payMethodSection').style.display = 'block';
+  } else {
+    el('payMethodSection').style.display = 'none';
+  }
+  el('payGcashName').textContent= gcashName || '—';
+  el('payGcashNum').textContent = gcashNum  || '—';
+  el('payWarnHost').textContent = 'the biller';
+
+  // Show QR if uploaded
+  if(qrDataUrl){
+    el('payQrSection').style.display = 'block';
+    el('payQrImg').src = qrDataUrl;
+  } else {
+    el('payQrSection').style.display = 'none';
+  }
+
+  // Show account number section only if number exists
+  el('payNumSection').style.display = gcashNum ? 'flex' : 'none';
+
+  // Show account name section only if name exists
+  el('payNameSection').style.display = gcashName ? 'block' : 'none';
+
+  goTo(5);
+}
+
+function confirmSent(){
+  var name = (el('guestName').value||'').trim();
+  if(name) saveGuestName(name);
+
+  var sess = curSess();
+  if(sess && name){
+    var dupe = (sess.payments||[]).some(function(p){ return p.name.toLowerCase()===name.toLowerCase(); });
+    if(dupe){ showToast(name+' has already paid for this bill'); return; }
+  }
+
+  var isEq      = splitMode==='equal';
+  var pickedIds = items.filter(function(it){return picked[it.id];}).map(function(it){return it.id;});
+
+  var payment = { name:name, items:isEq?[]:pickedIds, equalSplit:isEq, amount:guestAmountToPay, confirmed:false, isHost:false };
+
+  // Save to Supabase
+  savePaymentToSupabase(payment, function(){
+    el('sentHead').style.display='block';
+    el('dashHead').style.display='none';
+    el('sentMsg').textContent = 'Waiting for '+(gcashName||gcashName||'the biller')+' to confirm your payment';
+    goTo(6);
+  });
+}
+
+// ─── Dashboard ────────────────────────────────────────────────────────────────
+function renderDash(){
+  // Show empty state if no sessions
+  if(sessions.length===0){
+    el('noSessionMsg').style.display='block';
+    el('sessionTabsWrap').style.display='none';
+    el('sessionDetail').style.display='none';
+    return;
+  }
+
+  el('noSessionMsg').style.display='none';
+  el('sessionTabsWrap').style.display='block';
+  el('sessionDetail').style.display='block';
+  el('sessionCount').textContent = '('+sessions.length+'/'+MAX_SESSIONS+')';
+
+  // Render session grid
+  var tabsHtml = sessions.map(function(s,i){
+      var isActive  = i===activeSession;
+      var sItems    = s.items;
+      var sSvc      = s.svc !== null ? s.svc : Math.round(sItems.reduce(function(a,b){return a+b.price;},0)*SVC);
+      var sTot      = sItems.reduce(function(a,b){return a+b.price;},0) + sSvc;
+      var sConf     = s.payments.filter(function(p){return p.confirmed;}).reduce(function(a,p){
+        if(p.equalSplit||p.amount) return a+(p.amount||0);
+        var sub=p.items.reduce(function(x,id){var it=sItems.find(function(i){return i.id===id;});return x+(it?it.price:0);},0);
+        return a+sub+Math.round(sub*SVC);
+      },0);
+      var sForConf  = s.payments.filter(function(p){return !p.confirmed;}).reduce(function(a,p){
+        if(p.equalSplit||p.amount) return a+(p.amount||0);
+        var sub=p.items.reduce(function(x,id){var it=sItems.find(function(i){return i.id===id;});return x+(it?it.price:0);},0);
+        return a+sub+Math.round(sub*SVC);
+      },0);
+      var sOwed     = Math.max(0, sTot-sConf-sForConf);
+      var isSettled = sOwed===0 && sForConf===0 && sConf>0;
+
+      var statusDot, statusText;
+      if(isSettled){
+        statusDot='background:#00B37A'; statusText='All Settled';
+      } else if(sForConf>0){
+        statusDot='background:var(--yellow)'; statusText=fmt(sForConf)+' to confirm';
+      } else if(sOwed>0){
+        statusDot='background:var(--red)'; statusText=fmt(sOwed)+' owed';
+      } else {
+        statusDot='background:var(--dim)'; statusText='No payments yet';
+      }
+
+      var statusColor, statusIcon;
+      if(isSettled){
+        statusColor='#00B37A'; statusIcon='✓';
+      } else if(sForConf>0){
+        statusColor='var(--yellow)'; statusIcon='⏳';
+      } else if(sOwed>0){
+        statusColor='var(--red)'; statusIcon='!';
+      } else {
+        statusColor='var(--dim)'; statusIcon='·';
+      }
+
+      var billNum   = 'Bill #'+(i+1);
+      var tabLabel  = (s.label && s.label !== billNum) ? s.label : billNum;
+      var shortLabel = tabLabel.length > 10 ? tabLabel.slice(0,9)+'…' : tabLabel;
+
+      return '<div onclick="switchSession('+i+')" style="'
+        +'cursor:pointer;border-radius:10px;padding:8px 4px;text-align:center;'
+        +'background:'+(isActive?'var(--abg)':'var(--muted)')+';'
+        +'border:1.5px solid '+(isActive?'var(--accent)':'var(--border)')+';'
+        +'transition:all 0.15s;position:relative">'
+        +'<div style="position:absolute;top:5px;right:5px;width:6px;height:6px;border-radius:50%;background:'+statusColor+'"></div>'
+        +'<div style="width:24px;height:24px;border-radius:6px;background:'+(isActive?'var(--accent)':'var(--border)')+';'
+        +'display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;'
+        +'color:'+(isActive?'#fff':'var(--mid)')+';margin:0 auto 4px">'+( i+1)+'</div>'
+        +'<div style="font-size:10px;font-weight:700;color:'+(isActive?'var(--accent)':'var(--text)')+';line-height:1.2;word-break:break-word">'+shortLabel+'</div>'
+        +'<div style="font-size:9px;color:var(--dim);margin-top:2px">'+s.date.split(' · ')[0]+'</div>'
+        +'<div style="font-size:10px;font-weight:700;color:var(--text);margin-top:3px">'+fmt(sTot)+'</div>'
+        +'</div>';
+    }).join('');
+
+  el('sessionTabs').innerHTML = '<div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-bottom:12px">'+tabsHtml+'</div>';
+
+  // Render active session detail
+  var sess = sessions[activeSession];
+  if(!sess) return;
+
+  var sessItems = sess.items;
+  var sessSvc   = sess.svc !== null ? sess.svc : Math.round(sessItems.reduce(function(s,i){return s+i.price;},0)*SVC);
+  var sessTot   = sessItems.reduce(function(s,i){return s+i.price;},0) + sessSvc;
+  var payments  = sess.payments;
+
+  function calcSessAmt(p){
+    if(p.equalSplit||p.amount) return p.amount||0;
+    var sub = p.items.reduce(function(s,id){
+      var it = sessItems.find(function(i){return i.id===id;});
+      return s+(it?it.price:0);
+    },0);
+    return sub + Math.round(sub*SVC);
+  }
+
+  var confirmed   = payments.filter(function(p){return p.confirmed;}).reduce(function(s,p){return s+calcSessAmt(p);},0);
+  var forConfirm  = payments.filter(function(p){return !p.confirmed;}).reduce(function(s,p){return s+calcSessAmt(p);},0);
+  var owed        = Math.max(0, sessTot - confirmed - forConfirm);
+  var pct         = sessTot>0 ? (confirmed/sessTot)*100 : 0;
+
+  el('dTotal').textContent = fmt(sessTot);
+  el('dOwed').textContent  = fmt(owed);
+  el('owedCard').querySelector('.stat-val').className = 'stat-val '+(owed>0?'red':'green');
+  el('dPending').textContent = forConfirm>0 ? fmt(forConfirm) : '₱0.00';
+  el('dProg').style.width  = Math.min(100,pct)+'%';
+  el('dPct').textContent   = pct.toFixed(0)+'%';
+  el('dConfirmed').textContent = fmt(confirmed)+' confirmed';
+
+  // Bill label — editable input, placeholder is Bill #N
+  var billNum = 'Bill #'+(activeSession+1);
+  var hasCustomLabel = sess.label && sess.label !== billNum;
+  el('dashBillLabel').value = hasCustomLabel ? sess.label : '';
+  el('dashBillLabel').placeholder = billNum;
+
+  // New payment alert — payments pending confirmation
+  var pendingPayments = payments.filter(function(p){return !p.confirmed;});
+  if(pendingPayments.length>0){
+    el('newPaymentAlert').style.display='block';
+    var names = pendingPayments.map(function(p){return p.name;}).join(', ');
+    el('newPaymentMsg').textContent = names+(pendingPayments.length===1?' is waiting for your confirmation':' are waiting for your confirmation');
+  } else {
+    el('newPaymentAlert').style.display='none';
+  }
+
+  // Always show payment link — generate one if not yet saved
+  if(!sess.slug){
+    sess.slug = (gcashNum||'pay').replace(/\s+/g,'')+'-'+Math.random().toString(36).slice(-4);
+    persistSessions();
+  }
+  el('dashLinkUrl').textContent = 'splitsies.app/pay/'+sess.slug;
+  el('dashLinkCard').style.display = 'block';
+
+  // Fully paid banner — show only when owed = 0, forConfirm = 0, and there are confirmed payments
+  var isFullyPaid = owed===0 && forConfirm===0 && confirmed>0;
+  el('fullyPaidBanner').style.display = isFullyPaid ? 'block' : 'none';
+
+  el('payList').innerHTML = payments.length===0
+    ? '<div style="text-align:center;padding:20px 0;color:var(--dim);font-size:14px">No payments yet for this receipt</div>'
+    : payments.map(function(p,idx){
+        var amt   = calcSessAmt(p);
+        var pItms = p.items.map(function(id){return sessItems.find(function(i){return i.id===id;});}).filter(Boolean);
+        var prev  = p.equalSplit ? 'Equal share (1 of '+sess.numPeople+' people)'
+                  : pItms.slice(0,2).map(function(i){return i.name;}).join(', ')+(pItms.length>2?' +'+(pItms.length-2):'');
+        var last  = idx===payments.length-1;
+        return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0'+(last?'':';border-bottom:1px solid var(--border)')+'">'
+          +'<div style="display:flex;gap:12px;align-items:center">'
+          +'<div class="avatar '+(p.confirmed?'av-green':'av-yellow')+'">'+p.name[0].toUpperCase()+'</div>'
+          +'<div>'
+          +'<div style="font-size:14px;font-weight:700">'+p.name+'</div>'
+          +'<div style="font-size:11px;color:var(--dim);margin-top:2px">'+prev+'</div>'
+          +'</div></div>'
+          +'<div style="text-align:right">'
+          +'<div style="font-size:15px;font-weight:800;color:var(--accent);margin-bottom:4px">'+fmt(amt)+'</div>'
+          +(p.confirmed
+            ? '<span class="pill-green">✓ confirmed</span>'
+            : '<button onclick="confirmPay('+idx+')" style="padding:3px 12px;border-radius:20px;background:var(--ybg);color:var(--yellow);border:1px solid rgba(196,124,10,0.2);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Confirm ✓</button>')
+          +'</div></div>';
+      }).join('');
+}
+
+function switchSession(i){
+  if(i < 0 || i >= sessions.length) return;
+  activeSession = i;
+  var sess = sessions[i];
+  if(!sess) return;
+  items          = (sess.items||[]).slice();
+  svcFromReceipt = sess.svc != null ? sess.svc : null;
+  numPeople      = sess.numPeople || 4;
+  splitMode      = sess.splitMode || 'item';
+  renderDash();
+}
+
+function calcAmt(p){
+  if(p.equalSplit||p.amount) return p.amount||0;
+  var sub = p.items.reduce(function(s,id){
+    var it = items.find(function(i){return i.id===id;});
+    return s+(it?it.price:0);
+  },0);
+  return sub + Math.round(sub*SVC);
+}
+
+function confirmPay(idx){
+  if(activeSession===null||!sessions[activeSession]) return;
+  var payment = sessions[activeSession].payments[idx];
+  if(!payment) return;
+  sessions[activeSession].payments[idx].confirmed = true;
+  renderDash();
+  // Update in Supabase
+  if(payment.id){
+    confirmPayInSupabase(payment.id, function(){});
+  }
+}
+
+function addGuest(){
+  el('guestName').value='';
+  picked={};
+  el('sentHead').style.display='none';
+  el('dashHead').style.display='block';
+  goTo(4);
+}
+
+// ─── Copy helpers ─────────────────────────────────────────────────────────────
+function safeCopy(text, cb){
+  try{
+    if(navigator.clipboard && navigator.clipboard.writeText){
+      navigator.clipboard.writeText(text).then(cb).catch(function(){ fallbackCopy(text,cb); });
+    } else { fallbackCopy(text,cb); }
+  }catch(e){ fallbackCopy(text,cb); }
+}
+
+function fallbackCopy(text,cb){
+  try{
+    var ta=document.createElement('textarea');
+    ta.value=text; ta.style.cssText='position:fixed;top:0;left:0;opacity:0;';
+    document.body.appendChild(ta); ta.focus(); ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+    if(cb) cb();
+  }catch(e){ if(cb) cb(); }
+}
+
+function copyField(fieldId, btn){
+  var val = (el(fieldId).value||'').trim();
+  if(!val) return;
+  var orig=btn.textContent;
+  safeCopy(val, function(){
+    btn.textContent='Copied!'; btn.style.color='var(--accent)';
+    setTimeout(function(){btn.textContent=orig;btn.style.color='';},2000);
+  });
+}
+
+function copyDashLink(){
+  var url = 'https://'+(el('dashLinkUrl').textContent||'').trim();
+  var btn = el('copyDashLinkBtn');
+  safeCopy(url, function(){
+    btn.textContent='✓ Copied!';
+    setTimeout(function(){btn.textContent='📋 Copy & Resend Link';},2000);
+  });
+}
+
+function copyPayNum(){
+  var num = (el('payGcashNum').textContent||'').trim();
+  if(!num||num==='—') return;
+  var btn = el('copyNumBtn');
+  safeCopy(num, function(){
+    btn.textContent='Copied!'; btn.style.color='var(--accent)';
+    setTimeout(function(){btn.textContent='Copy';btn.style.color='';},2000);
+  });
+}
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+document.addEventListener('DOMContentLoaded', function(){
+  try{ localStorage.removeItem('splitsies_onboarded'); }catch(e){}
+  try{ localStorage.removeItem('splitsies_splitter_onboarded'); }catch(e){}
+
+  // Check if splitter is opening a bill link (?bill=slug)
+  var urlParams = new URLSearchParams(window.location.search);
+  var billSlug  = urlParams.get('bill');
+
+  if(billSlug){
+    // Splitter flow — load bill from Supabase by slug
+    billerMode = false;
+    el('inviteGate').style.display = 'none';
+    lockBillerUI();
+    // Show loading
+    goTo(4);
+    el('s4Title').textContent = 'Loading bill…';
+    el('s4Sub').textContent   = 'Please wait';
+    loadBillBySlug(billSlug, function(bill){
+      if(!bill){
+        el('s4Title').textContent = 'Bill Not Found';
+        el('s4Sub').textContent   = 'This link may have expired or is invalid';
+        return;
+      }
+      showSplitterOnboard();
+      renderGuest();
+    });
+  } else {
+    // Biller flow — load from Supabase
+    loadBillerFromSupabase(function(){
+      loadBillsFromSupabase(function(){
+        initInviteGate();
+      });
+    });
+  }
+});
+</script>
+</body>
+</html>
