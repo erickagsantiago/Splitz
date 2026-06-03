@@ -4,13 +4,24 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  // Handle body whether it's already parsed or still a string
   let body = req.body;
   if (typeof body === 'string') {
     try { body = JSON.parse(body); } catch(e) {}
   }
-  body.stream = false;
 
+  // Log what we received
+  const hasModel = !!(body && body.model);
+  const hasMessages = !!(body && body.messages && body.messages.length);
+  const bodySize = JSON.stringify(body || {}).length;
+  console.log('body received - hasModel:', hasModel, 'hasMessages:', hasMessages, 'size:', bodySize);
+
+  if (!hasModel) {
+    return res.status(200).json({ 
+      content: [{ text: 'DEBUG: body missing model. size=' + bodySize + ' keys=' + Object.keys(body||{}).join(',') }] 
+    });
+  }
+
+  body.stream = false;
   const r = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -23,4 +34,4 @@ export default async function handler(req, res) {
   const d = await r.json();
   res.status(200).json(d);
 }
-export const config = { api: { bodyParser: { sizeLimit: '10mb' } } };
+export const config = { api: { bodyParser: { sizeLimit: '15mb' } } };
