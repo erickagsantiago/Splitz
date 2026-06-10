@@ -1488,7 +1488,7 @@ function handleQrUpload(e){
     el('qrUploadLabel').style.borderColor = 'var(--accent)';
     el('qrUploadLabel').style.background  = 'var(--abg)';
   };
-  img.src = objectUrl;
+  reader.readAsDataURL(file);
 }
 
 function removeQr(){
@@ -1754,13 +1754,16 @@ function runAI(file){
         el('aiLog').textContent = 'Response: ' + fullResponse;
 
         var text = '';
-        if(data.content && data.content[0] && data.content[0].text){
+        if(data && data.content && data.content[0] && data.content[0].text){
           text = data.content[0].text;
-        } else if(data.error) {
-          el('aiLog').textContent = 'API Error: ' + JSON.stringify(data.error);
-          throw new Error('API error: ' + data.error.type);
+          el('aiLog').textContent = text;
+        } else if(data && data.error) {
+          el('aiLog').textContent = 'API Error: ' + JSON.stringify(data.error).slice(0,300);
+          throw new Error('shown');
+        } else {
+          el('aiLog').textContent = 'Unexpected response: ' + JSON.stringify(data).slice(0,300);
+          throw new Error('shown');
         }
-        el('aiLog').textContent = text;
         // Try to extract JSON from anywhere in the response
         var jsonMatch = text.match(/\{[\s\S]*\}/);
         if(!jsonMatch) throw new Error('No JSON found');
@@ -1777,8 +1780,10 @@ function runAI(file){
         items = expanded.map(function(it,i){return Object.assign({},it,{id:i+1});});
         svcFromReceipt = (parsed.serviceCharge!=null && !isNaN(parsed.serviceCharge)) ? Number(parsed.serviceCharge) : null;
       }catch(e){
-        // Show what AI returned for debugging
-        el('aiLog').textContent = 'AI said: ' + (text ? text.slice(0,200) : 'empty response');
+        // Show what actually came back — never hide the real error
+        if(e.message !== 'shown'){
+          el('aiLog').textContent = 'AI said: ' + (text ? text.slice(0,300) : JSON.stringify(data).slice(0,300));
+        }
         showToast('Could not read receipt — see AI response above');
         items = [];
         svcFromReceipt = null;
