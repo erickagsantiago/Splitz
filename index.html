@@ -454,7 +454,7 @@ select:focus{border-color:var(--accent)}
     <div id="linkReadySection" style="display:none;margin-top:12px">
       <div class="card" style="background:linear-gradient(135deg,#EBF9F4,#E0F5EE);border-color:rgba(0,179,122,0.2)">
         <div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:6px">🔗 Link Ready!</div>
-        <div style="font-size:13px;color:var(--accent);font-weight:600;word-break:break-all;margin-bottom:12px" id="lnkUrl">splitsies.app/pay/—</div>
+        <div style="font-size:13px;color:var(--accent);font-weight:600;word-break:break-all;margin-bottom:12px" id="lnkUrl">Generating link…</div>
         <div id="lnkEqualHint" style="display:none;font-size:12px;color:var(--accent);font-weight:600;margin-bottom:10px"></div>
         <button class="btn btn-primary" id="copyLinkBtn" onclick="copyLink()" style="margin-bottom:8px">📋 Copy & Send to Friends</button>
         <button class="btn" onclick="openDash()" style="width:100%;padding:13px;border-radius:12px;background:linear-gradient(135deg,#00B37A,#008F60);color:#fff;font-weight:700;font-size:14px;border:none;cursor:pointer;font-family:inherit;box-shadow:0 4px 16px rgba(0,179,122,0.2)">📊 Track Payments in Dashboard →</button>
@@ -528,7 +528,7 @@ select:focus{border-color:var(--accent)}
   <div class="card mt16">
     <label class="flabel">Your Name</label>
     <input type="text" id="guestName" placeholder="e.g. Julius" oninput="updateGuestCalc()"/>
-    <div id="savedNameHint" style="display:none;font-size:11px;color:var(--accent);margin-top:6px;font-weight:600">✓ Name auto-filled from last time · <span onclick="clearSavedName()" style="color:var(--dim);cursor:pointer;text-decoration:underline">Clear</span></div>
+    <div id="savedNameHint" style="display:none;font-size:11px;color:var(--accent);margin-top:6px;font-weight:600">✓ Name remembered · <span onclick="clearSavedName()" style="color:var(--dim);cursor:pointer;text-decoration:underline">Clear</span></div>
   </div>
 
   <!-- Who already paid -->
@@ -827,8 +827,7 @@ function loadBillerFromSupabase(cb){
       paymentMethod = b.payment_method||''; qrDataUrl = b.qr_url||'';
       var en = el('gcashNum');    if(en) en.value = gcashNum;
       var ea = el('gcashName');   if(ea) ea.value = gcashName;
-      var em = el('paymentMethod'); if(em) em.value = paymentMethod;
-      if(qrDataUrl){ var pi=el('qrPreviewImg'); if(pi) pi.src=qrDataUrl; var pv=el('qrPreview'); if(pv) pv.style.display='block'; }
+      // paymentMethod and QR elements removed from UI
       showGcashChip(gcashNum, gcashName, paymentMethod);
     }
     if(cb) cb();
@@ -1171,10 +1170,9 @@ function checkPin(){
 
 function goTo(n){
   // Snapshot gcash from inputs before leaving s0
-  var ni = el('gcashNum'), na = el('gcashName'), nm = el('paymentMethod');
-  if(ni) gcashNum       = ni.value.trim() || gcashNum;
-  if(na) gcashName      = na.value.trim() || gcashName;
-  if(nm) paymentMethod  = nm.value.trim() || paymentMethod;
+  var ni = el('gcashNum'), na = el('gcashName');
+  if(ni) gcashNum  = ni.value.trim() || gcashNum;
+  if(na) gcashName = na.value.trim() || gcashName;
 
   // S3 is merged into S0 — redirect and show link section
   if(n===3){
@@ -1224,29 +1222,12 @@ function changeNum(d){
   numPeople = next;
   el('numDisplay').textContent = numPeople;
   // Always recalc if items loaded — covers both itemized and equal split displays
-  if(items.length > 0) refreshSummary();
+  if(items.length > 0){ refreshSummary(); updateBillInSupabase(); }
 }
 
 
 function loadGcash(){
-  try{
-    var s = localStorage.getItem('splitz_gcash') || localStorage.getItem('splitsies_gcash');
-    if(!s) return;
-    var o = JSON.parse(s);
-    if(o.num){    gcashNum=o.num;       var e=el('gcashNum');       if(e) e.value=o.num; }
-    if(o.name){   gcashName=o.name;     var e=el('gcashName');      if(e) e.value=o.name; }
-    if(o.method){ paymentMethod=o.method; var e=el('paymentMethod'); if(e) e.value=o.method; }
-    if(o.qr){
-      qrDataUrl = o.qr;
-      var pi = el('qrPreviewImg'); if(pi) pi.src = o.qr;
-      var pv = el('qrPreview');    if(pv) pv.style.display = 'block';
-      var ul = el('qrUploadLabel');
-      if(ul){ ul.style.borderColor='var(--accent)'; ul.style.background='var(--abg)'; }
-    }
-    el('savedBadge').style.display='block';
-    el('clearBtn').style.display='block';
-    showGcashChip(o.num, o.name, o.method);
-  }catch(e){}
+  // deprecated — loading now handled by loadBillerFromSupabase
 }
 
 function showGcashChip(num, name, method){
@@ -1264,33 +1245,18 @@ function editGcash(){
 function saveGcash(){
   var n = (el('gcashNum').value||'').trim();
   var a = (el('gcashName').value||'').trim();
-  var m = (el('paymentMethod').value||'').trim();
-  if(!n && !a && !m && !qrDataUrl){
-    showToast('Please fill in at least one payment detail');
-    return;
-  }
-  gcashNum=n; gcashName=a; paymentMethod=m;
+  if(!n && !a){ showToast('Please fill in your GCash number or name'); return; }
+  gcashNum=n; gcashName=a;
   saveBillerToSupabase(function(){
-    showToast('✓ Payment details saved!', 'success');
+    showToast('✓ GCash details saved!', 'success');
+    showGcashChip(n, a, 'GCash');
   });
-  try{ localStorage.setItem('splitz_gcash', JSON.stringify({num:n,name:a,method:m,qr:qrDataUrl})); }catch(e){}
-  el('savedBadge').style.display='block';
-  el('clearBtn').style.display='inline-block';
-  var b = el('saveGcashBtn');
-  var orig = b.textContent;
-  b.textContent='✓ Saved!';
-  setTimeout(function(){ b.textContent=orig; showGcashChip(n,a,m); }, 1200);
 }
 
 function clearGcash(){
-  try{ localStorage.removeItem('splitsies_gcash'); }catch(e){}
-  gcashNum=''; gcashName=''; paymentMethod=''; qrDataUrl='';
-  el('gcashNum').value='';
-  el('gcashName').value='';
-  el('paymentMethod').value='';
-  removeQr();
-  el('savedBadge').style.display='none';
-  el('clearBtn').style.display='none';
+  gcashNum=''; gcashName=''; paymentMethod='GCash'; qrDataUrl='';
+  var gn=el('gcashNum'); if(gn) gn.value='';
+  var ga=el('gcashName'); if(ga) ga.value='';
   el('gcashSavedChip').style.display='none';
   el('gcashFullForm').style.display='block';
 }
@@ -1763,6 +1729,12 @@ function runAI(file){
 
 // ─── Summary ──────────────────────────────────────────────────────────────────
 function showSummary(){
+  // Always reset to By Item mode when showing a new receipt
+  splitMode = 'item';
+  el('tabItem').className  = 'stab active';
+  el('tabEqual').className = 'stab';
+  el('modeItem').style.display  = 'block';
+  el('modeEqual').style.display = 'none';
   el('summarySection').style.display='block';
   refreshSummary();
   setTimeout(function(){ el('summarySection').scrollIntoView({behavior:'smooth',block:'start'}); },80);
@@ -1831,7 +1803,7 @@ function setMode(m){
   el('tabEqual').className = 'stab' + (m==='equal'?' active':'');
   el('modeItem').style.display  = m==='item'  ? 'block':'none';
   el('modeEqual').style.display = m==='equal' ? 'block':'none';
-  if(items.length) refreshSummary();
+  if(items.length){ refreshSummary(); updateBillInSupabase(); }
 }
 
 // ─── Session persistence ──────────────────────────────────────────────────────
@@ -1856,15 +1828,20 @@ function loadSessions(){
 }
 
 function startNewReceipt(){
-  // Reset working state and go back to setup
+  // Reset ALL state for a clean new receipt
   items=[]; svcFromReceipt=null; picked={}; splitMode='item';
   el('summarySection').style.display='none';
   el('aiSection').style.display='none';
   el('linkReadySection').style.display='none';
   el('fileInput').value='';
-  gcashNum=''; gcashName=''; paymentMethod='';
-  var gn=el('gcashNum'); if(gn) gn.value='';
-  var ga=el('gcashName'); if(ga) ga.value='';
+  el('billLabel').value='';
+  el('numDisplay').textContent='4'; numPeople=4;
+  el('tabItem').className='stab active';
+  el('tabEqual').className='stab';
+  el('modeItem').style.display='block';
+  el('modeEqual').style.display='none';
+  // Keep gcash details for next receipt — don't clear payment info
+  paymentMethod='GCash';
   el('gcashSavedChip').style.display='none';
   el('gcashFullForm').style.display='block';
   goTo(0);
@@ -1876,8 +1853,9 @@ function generateAndShow(){
   if(subtotal <= 0){ showToast('Please add valid item prices before generating a link'); return; }
 
   var ni=el('gcashNum'), na=el('gcashName');
-  if(ni) gcashNum = ni.value.trim() || gcashNum;
-  if(na) gcashName = na.value.trim() || gcashName;
+  if(ni && ni.value.trim()) gcashNum = ni.value.trim();
+  if(na && na.value.trim()) gcashName = na.value.trim();
+  if(gcashNum || gcashName) saveBillerToSupabase(function(){});
 
   // Show loading state
   var lnkSection = el('linkReadySection');
@@ -1918,7 +1896,8 @@ function renderLink(){
     persistSessions();
   }
   var slug = (sess && sess.slug) || 'pay-xxxx';
-  lnkEl.textContent = 'splitsies.app/pay/'+slug;
+  var appUrlR = window.location.origin + window.location.pathname;
+  lnkEl.textContent = appUrlR + '?bill=' + slug;
   var h = el('lnkEqualHint');
   if(h){
     h.style.display = splitMode==='equal'?'block':'none';
@@ -1968,7 +1947,8 @@ function saveCurrentSession(){
 }
 
 function copyLink(){
-  var url = 'https://'+el('lnkUrl').textContent.trim();
+  var url = el('lnkUrl').textContent.trim();
+  if(!url.startsWith('http')) url = 'https://' + url;
   var btn = el('copyLinkBtn');
   safeCopy(url, function(){
     btn.textContent='✓ Copied!';
@@ -2120,13 +2100,8 @@ function goToPayment(){
   guestAmountToPay = gTot;
   el('payTitle').textContent    = 'Pay the Biller';
   el('payAmt').textContent      = fmt(gTot);
-  // Show payment method only if biller set one
-  if(paymentMethod){
-    el('payMethodDisplay').textContent = paymentMethod;
-    el('payMethodSection').style.display = 'block';
-  } else {
-    el('payMethodSection').style.display = 'none';
-  }
+  el('payMethodDisplay').textContent = 'GCash';
+  el('payMethodSection').style.display = 'block';
   el('payGcashName').textContent= gcashName || '—';
   el('payGcashNum').textContent = gcashNum  || '—';
   el('payWarnHost').textContent = 'the biller';
@@ -2310,13 +2285,44 @@ function renderDash(){
   var dashAppUrl = window.location.origin + window.location.pathname;
   el('dashLinkUrl').textContent = dashAppUrl + '?bill=' + sess.slug;
   el('dashLinkCard').style.display = 'block';
-  el('dashLinkCard').style.display = 'block';
 
   // Fully paid banner — show only when owed = 0, forConfirm = 0, and there are confirmed payments
   var isFullyPaid = owed===0 && forConfirm===0 && confirmed>0;
   el('fullyPaidBanner').style.display = isFullyPaid ? 'block' : 'none';
 
-  el('payList').innerHTML = payments.length===0
+  // Build a map of itemId → list of payer names
+  var itemPayers = {};
+  sessItems.forEach(function(it){ itemPayers[it.id] = []; });
+  payments.forEach(function(p){
+    if(p.confirmed && !p.equalSplit){
+      (p.items||[]).forEach(function(id){
+        if(itemPayers[id]) itemPayers[id].push(p.name);
+      });
+    }
+  });
+
+  // Itemized breakdown section
+  var itemsHtml = '<div style="margin-bottom:6px">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Item Tracker</div>'
+    + sessItems.map(function(it){
+        var payers = itemPayers[it.id] || [];
+        var isPaid = payers.length > 0;
+        var payerText = isPaid ? payers.join(', ') : 'Unpaid';
+        return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
+          +'<div style="width:20px;height:20px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;'
+          +(isPaid ? 'background:var(--abg);border:1.5px solid var(--accent);color:var(--accent)' : 'background:var(--muted);border:1.5px solid var(--border);color:var(--dim)')
+          +'">'+( isPaid ? '✓' : '·' )+'</div>'
+          +'<div style="flex:1;min-width:0">'
+          +'<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+'</div>'
+          +'<div style="font-size:11px;color:'+(isPaid?'var(--accent)':'var(--dim)')+'">'+payerText+'</div>'
+          +'</div>'
+          +'<div style="font-size:13px;font-weight:700;color:var(--mid)">'+fmt(it.price)+'</div>'
+          +'</div>';
+      }).join('')
+    + '</div>';
+
+  // Payments list
+  var paymentsHtml = payments.length===0
     ? '<div style="text-align:center;padding:20px 0;color:var(--dim);font-size:14px">No payments yet for this receipt</div>'
     : payments.map(function(p,idx){
         var amt   = calcSessAmt(p);
@@ -2338,6 +2344,8 @@ function renderDash(){
             : '<button onclick="confirmPay('+idx+')" style="padding:3px 12px;border-radius:20px;background:var(--ybg);color:var(--yellow);border:1px solid rgba(196,124,10,0.2);font-size:11px;font-weight:700;cursor:pointer;font-family:inherit">Confirm ✓</button>')
           +'</div></div>';
       }).join('');
+
+  el('payList').innerHTML = itemsHtml + '<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin:14px 0 10px">Payments</div>' + paymentsHtml;
 }
 
 function switchSession(i){
@@ -2365,6 +2373,7 @@ function confirmPay(idx){
   if(activeSession===null||!sessions[activeSession]) return;
   var payment = sessions[activeSession].payments[idx];
   if(!payment) return;
+  if(!sessions[activeSession].payments[idx]) return;
   sessions[activeSession].payments[idx].confirmed = true;
   renderDash();
   // Update in Supabase
@@ -2412,7 +2421,8 @@ function copyField(fieldId, btn){
 }
 
 function copyDashLink(){
-  var url = 'https://'+(el('dashLinkUrl').textContent||'').trim();
+  var url = (el('dashLinkUrl').textContent||'').trim();
+  if(!url.startsWith('http')) url = 'https://' + url;
   var btn = el('copyDashLinkBtn');
   safeCopy(url, function(){
     btn.textContent='✓ Copied!';
