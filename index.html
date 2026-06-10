@@ -230,12 +230,7 @@ select:focus{border-color:var(--accent)}
       Enter →
     </button>
 
-    <div style="margin-top:20px;padding-top:20px;border-top:1px solid rgba(255,255,255,0.2)">
-      <div style="font-size:12px;color:rgba(255,255,255,0.6);margin-bottom:12px">Are you a splitter paying a bill?</div>
-      <button onclick="enterAsSplitter()" style="width:100%;padding:12px;border-radius:12px;border:1.5px solid rgba(255,255,255,0.4);background:transparent;color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">
-        Open as Splitter
-      </button>
-    </div>
+
 
   </div>
 </div>
@@ -989,7 +984,7 @@ function deleteBillFromSupabase(billId, cb){
 
 // ─── Realtime subscription ────────────────────────────────────────────────────
 function subscribeToPayments(billId){
-  if(realtimeChannel) return; // already subscribed
+  if(realtimeChannel) return;
   var ws = new WebSocket(
     SUPA_URL.replace('https','wss') + '/realtime/v1/websocket?apikey=' + SUPA_KEY + '&vsn=1.0.0'
   );
@@ -1001,17 +996,63 @@ function subscribeToPayments(billId){
     try{
       var msg = JSON.parse(e.data);
       if(msg.event === 'INSERT' || msg.event === 'UPDATE'){
-        // New or updated payment — refresh dashboard if open
-        loadBillsFromSupabase(function(){
-          var s6 = el('s6');
-          if(s6 && s6.classList.contains('active')) renderDash();
-          // Show notification badge
-          showNewPaymentNotification(msg.payload && msg.payload.record ? msg.payload.record.splitter_name : 'Someone');
+        refreshDashFromServer(function(name){
+          showNewPaymentNotification(name || 'Someone');
         });
       }
     }catch(ex){}
   };
+  ws.onclose = function(){
+    realtimeChannel = null;
+    // Reconnect after 3s if bill still active
+    setTimeout(function(){ if(currentBillId) subscribeToPayments(currentBillId); }, 3000);
+  };
 }
+
+// Pull latest payments from server and re-render dashboard
+function refreshDashFromServer(cb){
+  if(!currentBillId) return;
+  supaGet('payments?bill_id=eq.'+currentBillId+'&order=created_at.asc&select=*').then(function(pmts){
+    if(!pmts || !curSess()) return;
+    // Merge new payments into session — don't remove existing ones (preserves local state)
+    var existing = curSess().payments;
+    (pmts||[]).forEach(function(p){
+      var idx = existing.findIndex(function(x){return x.id===p.id;});
+      var mapped = { id:p.id, name:p.splitter_name, items:p.item_ids||[], equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed };
+      if(idx>=0) existing[idx] = mapped;
+      else existing.push(mapped);
+    });
+    var s6 = el('s6');
+    if(s6 && s6.classList.contains('active')) renderDash();
+    if(cb) cb(pmts && pmts[pmts.length-1] ? pmts[pmts.length-1].splitter_name : null);
+  });
+}
+
+// Auto-refresh dashboard every 30 seconds as safety net
+setInterval(function(){
+  var s6 = el('s6');
+  if(s6 && s6.classList.contains('active') && currentBillId){
+    refreshDashFromServer(null);
+  }
+}, 30000);
+
+// Also refresh splitter item list every 20s to show latest claimed items
+setInterval(function(){
+  var s4 = el('s4');
+  if(s4 && s4.classList.contains('active') && currentBillId && splitMode!=='equal'){
+    supaGet('payments?bill_id=eq.'+currentBillId+'&select=*').then(function(pmts){
+      if(!pmts || !curSess()) return;
+      (pmts||[]).forEach(function(p){
+        var exists = curSess().payments.some(function(x){return x.id===p.id;});
+        if(!exists) curSess().payments.push({
+          id:p.id, name:p.splitter_name, items:p.item_ids||[],
+          equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed
+        });
+      });
+      renderGuestItems();
+    });
+  }
+}, 20000);
 
 function showNewPaymentNotification(name){
   showToast('💸 ' + name + ' just sent a payment!', 'success');
@@ -1840,10 +1881,20 @@ function startNewReceipt(){
   el('tabEqual').className='stab';
   el('modeItem').style.display='block';
   el('modeEqual').style.display='none';
-  // Keep gcash details for next receipt — don't clear payment info
-  paymentMethod='GCash';
+  // Clear all payment details for fresh start
+  gcashNum=''; gcashName=''; paymentMethod='GCash'; qrDataUrl='';
+  var gn=el('gcashNum'); if(gn) gn.value='';
+  var ga=el('gcashName'); if(ga) ga.value='';
   el('gcashSavedChip').style.display='none';
   el('gcashFullForm').style.display='block';
+  if(currentBillerId){
+    supaPatch('billers?id=eq.'+currentBillerId, { account_number:'', account_name:'', payment_method:'GCash', qr_url:'' });
+  }
+  currentBillId = null;
+
+
+
+
   goTo(0);
 }
 
@@ -2127,18 +2178,48 @@ function confirmSent(){
   var name = (el('guestName').value||'').trim();
   if(name) saveGuestName(name);
 
-  var sess = curSess();
-  if(sess && name){
-  }
-
   var isEq      = splitMode==='equal';
   var pickedIds = items.filter(function(it){return picked[it.id];}).map(function(it){return it.id;});
+  var payment   = { name:name, items:isEq?[]:pickedIds, equalSplit:isEq, amount:guestAmountToPay, confirmed:false, isHost:false };
 
-  var payment = { name:name, items:isEq?[]:pickedIds, equalSplit:isEq, amount:guestAmountToPay, confirmed:false, isHost:false };
+  // For item splits: re-fetch latest payments first to catch concurrency conflicts
+  if(!isEq && currentBillId){
+    supaGet('payments?bill_id=eq.'+currentBillId+'&select=*').then(function(latestPmts){
+      // Build set of already-claimed item IDs from confirmed payments
+      var nowClaimed = {};
+      (latestPmts||[]).forEach(function(p){
+        if(p.confirmed)(p.item_ids||[]).forEach(function(id){ nowClaimed[id]=p.splitter_name; });
+      });
+      // Check if any of the splitter's picked items were just claimed
+      var conflicts = pickedIds.filter(function(id){ return nowClaimed[id]; });
+      if(conflicts.length > 0){
+        var conflictNames = conflicts.map(function(id){
+          var it = items.find(function(i){return i.id===id;});
+          return it ? it.name : 'item';
+        });
+        showToast('⚠️ ' + conflictNames.join(', ') + ' just got claimed! Please re-select.');
+        // Refresh the item list to show updated state
+        (latestPmts||[]).forEach(function(p){
+          if(!curSess()) return;
+          var exists = curSess().payments.some(function(x){return x.id===p.id;});
+          if(!exists) curSess().payments.push({
+            id:p.id, name:p.splitter_name, items:p.item_ids||[],
+            equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed
+          });
+        });
+        renderGuestItems();
+        return;
+      }
+      // No conflicts — proceed
+      doSavePayment(payment);
+    }).catch(function(){ doSavePayment(payment); });
+  } else {
+    doSavePayment(payment);
+  }
+}
 
-  // Save to Supabase
+function doSavePayment(payment){
   savePaymentToSupabase(payment, function(){
-    // Show splitter thank you screen - hide everything else
     document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
     el('s6').classList.add('active');
     el('dashHead').style.display='none';
@@ -2290,35 +2371,53 @@ function renderDash(){
   var isFullyPaid = owed===0 && forConfirm===0 && confirmed>0;
   el('fullyPaidBanner').style.display = isFullyPaid ? 'block' : 'none';
 
-  // Build a map of itemId → list of payer names
-  var itemPayers = {};
-  sessItems.forEach(function(it){ itemPayers[it.id] = []; });
+  // Build item payer maps — confirmed (green) and pending (yellow)
+  var itemConfirmed = {}; // itemId -> [names]
+  var itemPending   = {}; // itemId -> [names]
+  sessItems.forEach(function(it){ itemConfirmed[it.id]=[]; itemPending[it.id]=[]; });
   payments.forEach(function(p){
-    if(p.confirmed && !p.equalSplit){
-      (p.items||[]).forEach(function(id){
-        if(itemPayers[id]) itemPayers[id].push(p.name);
-      });
-    }
+    if(p.equalSplit) return;
+    (p.items||[]).forEach(function(id){
+      if(p.confirmed){ if(itemConfirmed[id]) itemConfirmed[id].push(p.name); }
+      else           { if(itemPending[id])   itemPending[id].push(p.name); }
+    });
   });
 
   // Itemized breakdown section
+  var unclaimedCount = 0;
   var itemsHtml = '<div style="margin-bottom:6px">'
-    + '<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Item Tracker</div>'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
+    + '<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Item Tracker</div>'
+    + '<button onclick="refreshDashFromServer()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:700">↻ Refresh</button>'
+    + '</div>'
     + sessItems.map(function(it){
-        var payers = itemPayers[it.id] || [];
-        var isPaid = payers.length > 0;
-        var payerText = isPaid ? payers.join(', ') : 'Unpaid';
+        var confirmed = itemConfirmed[it.id] || [];
+        var pending   = itemPending[it.id]   || [];
+        var isConfirmed = confirmed.length > 0;
+        var isPending   = pending.length > 0 && !isConfirmed;
+        var isUnclaimed = !isConfirmed && !isPending;
+        if(isUnclaimed) unclaimedCount++;
+        var dotStyle, symbol, payerText, nameColor;
+        if(isConfirmed){
+          dotStyle='background:var(--abg);border:1.5px solid var(--accent);color:var(--accent)';
+          symbol='✓'; payerText=confirmed.join(', '); nameColor='var(--accent)';
+        } else if(isPending){
+          dotStyle='background:var(--ybg);border:1.5px solid var(--yellow);color:var(--yellow)';
+          symbol='⏳'; payerText=pending.join(', ')+' (pending)'; nameColor='var(--yellow)';
+        } else {
+          dotStyle='background:var(--muted);border:1.5px solid var(--border);color:var(--dim)';
+          symbol='·'; payerText='Unclaimed'; nameColor='var(--dim)';
+        }
         return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
-          +'<div style="width:20px;height:20px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;'
-          +(isPaid ? 'background:var(--abg);border:1.5px solid var(--accent);color:var(--accent)' : 'background:var(--muted);border:1.5px solid var(--border);color:var(--dim)')
-          +'">'+( isPaid ? '✓' : '·' )+'</div>'
+          +'<div style="width:20px;height:20px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;'+dotStyle+'">'+symbol+'</div>'
           +'<div style="flex:1;min-width:0">'
           +'<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+'</div>'
-          +'<div style="font-size:11px;color:'+(isPaid?'var(--accent)':'var(--dim)')+'">'+payerText+'</div>'
+          +'<div style="font-size:11px;color:'+nameColor+'">'+payerText+'</div>'
           +'</div>'
           +'<div style="font-size:13px;font-weight:700;color:var(--mid)">'+fmt(it.price)+'</div>'
           +'</div>';
       }).join('')
+    + (unclaimedCount > 0 ? '<div style="font-size:11px;color:var(--dim);text-align:right;padding-top:6px">'+unclaimedCount+' item'+(unclaimedCount>1?'s':'')+' unclaimed</div>' : '')
     + '</div>';
 
   // Payments list
