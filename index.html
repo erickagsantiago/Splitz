@@ -1143,6 +1143,7 @@ var pinUnlocked = false; // stays true for the session once PIN entered
 
 function changePin(){
   try{ localStorage.removeItem('splitsies_pin'); }catch(e){}
+  try{ sessionStorage.removeItem('splitz_pin_unlocked'); }catch(e){}
   pinUnlocked = false;
   openDash();
 }
@@ -1207,6 +1208,7 @@ function checkPin(){
     if(pinBuffer===pinTemp){
       try{ localStorage.setItem('splitsies_pin', hashPin(pinBuffer)); }catch(e){}
       pinUnlocked = true;
+      try{ sessionStorage.setItem('splitz_pin_unlocked','1'); }catch(e){}
       el('pinSub').textContent = '✓ PIN saved!';
       el('pinSub').style.color = 'var(--accent)';
       setTimeout(function(){ goTo(6); }, 600);
@@ -1224,6 +1226,7 @@ function checkPin(){
     var saved = getSavedPin();
     if(hashPin(pinBuffer)===saved){
       pinUnlocked = true;
+      try{ sessionStorage.setItem('splitz_pin_unlocked','1'); }catch(e){}
       goTo(6);
     } else {
       shakeAndReset('Wrong PIN — try again');
@@ -2536,6 +2539,18 @@ document.addEventListener('DOMContentLoaded', function(){
     // Biller flow — load from Supabase
     loadBillerFromSupabase(function(){
       loadBillsFromSupabase(function(){
+        // If biller already unlocked PIN this session, go straight to dashboard
+        try{
+          if(sessionStorage.getItem('splitsies_biller')==='1' &&
+             sessionStorage.getItem('splitz_pin_unlocked')==='1'){
+            billerMode = true;
+            el('inviteGate').style.display = 'none';
+            el('navBar').style.display = 'flex';
+            pinUnlocked = true;
+            goTo(6);
+            return;
+          }
+        }catch(e){}
         initInviteGate();
       });
     });
