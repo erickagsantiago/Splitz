@@ -1,11 +1,20 @@
+// Hardened Claude proxy for Splitz
+// - Model and token limits are enforced server-side (client cannot override)
+// - POST requests must come from the Splitz app (referer/origin check)
+// - GET = diagnostic self-test
+
+const ALLOWED_HOST = 'splitz-flxl.vercel.app';
+const FORCED_MODEL = 'claude-sonnet-4-6';
+const MAX_TOKENS_CAP = 2000;
+
 export default async function handler(req, res) {
-  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Origin', 'https://' + ALLOWED_HOST);
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const apiKey = (process.env.ANTHROPIC_API_KEY || '').trim();
 
-  // GET = built-in diagnostic. Open /api/claude in a browser to self-test.
+  // GET = diagnostic self-test (open /api/claude in a browser)
   if (req.method === 'GET') {
     const info = {
       keyPresent: !!apiKey,
@@ -22,7 +31,7 @@ export default async function handler(req, res) {
           'anthropic-version': '2023-06-01'
         },
         body: JSON.stringify({
-          model: 'claude-sonnet-4-6',
+          model: FORCED_MODEL,
           max_tokens: 5,
           messages: [{ role: 'user', content: 'hi' }]
         })
@@ -37,16 +46,27 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
+  // Only accept requests originating from the Splitz app
+  const origin = req.headers.origin || '';
+  const referer = req.headers.referer || '';
+  if (!origin.includes(ALLOWED_HOST) && !referer.includes(ALLOWED_HOST)) {
+    return res.status(403).json({ error: { type: 'forbidden', message: 'Requests must come from the Splitz app' } });
+  }
+
   try {
     let body = req.body;
     if (typeof body === 'string') {
       try { body = JSON.parse(body); } catch (e) {}
     }
-    if (!body || !body.model) {
+    if (!body || !body.messages) {
       return res.status(200).json({
-        error: { type: 'proxy_debug', message: 'Body missing model field. Got keys: ' + Object.keys(body || {}).join(',') }
+        error: { type: 'proxy_debug', message: 'Body missing messages. Got keys: ' + Object.keys(body || {}).join(',') }
       });
     }
+
+    // Server-enforced limits — client cannot choose model or exceed token cap
+    body.model = FORCED_MODEL;
+    body.max_tokens = Math.min(Number(body.max_tokens) || 1500, MAX_TOKENS_CAP);
     body.stream = false;
 
     const r = await fetch('https://api.anthropic.com/v1/messages', {
