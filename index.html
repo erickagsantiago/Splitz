@@ -880,11 +880,13 @@ function saveBillToSupabase(cb){
 function updateBillInSupabase(){
   if(!currentBillId) return;
   supaPatch('bills?id=eq.'+currentBillId, {
-    label: curSess() ? curSess().label : undefined,
-    split_mode: splitMode,
-    num_people: numPeople,
-    svc: svcFromReceipt,
-    items: JSON.stringify(items)
+    label:        curSess() ? curSess().label : undefined,
+    split_mode:   splitMode,
+    num_people:   numPeople,
+    svc:          svcFromReceipt,
+    items:        JSON.stringify(items),
+    gcash_number: gcashNum,
+    gcash_name:   gcashName
   });
 }
 
@@ -912,8 +914,10 @@ function loadBillsFromSupabase(cb){
           svc:       b.svc,
           numPeople: b.num_people,
           splitMode: b.split_mode,
-          slug:      b.slug,
-          payments:  r.payments.map(function(p){
+          slug:        b.slug,
+          gcashNumber: b.gcash_number||'',
+          gcashName:   b.gcash_name||'',
+          payments:    r.payments.map(function(p){
             return { id:p.id, name:p.splitter_name, items: p.item_ids||[], equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed, isHost:false };
           })
         };
@@ -943,10 +947,11 @@ function loadBillBySlug(slug, cb){
         svcFromReceipt = bill.svc;
         numPeople = bill.num_people;
         splitMode = bill.split_mode;
-        gcashNum = biller.account_number||'';
-        gcashName = biller.account_name||'';
-        paymentMethod = biller.payment_method||'';
-        qrDataUrl = biller.qr_url||'';
+        // Use bill-level gcash if available, fall back to biller record
+        gcashNum = bill.gcash_number || biller.account_number || '';
+        gcashName = bill.gcash_name || biller.account_name || '';
+        paymentMethod = 'GCash';
+        qrDataUrl = '';
         currentBillId = bill.id;
         // Build local session
         sessions = [{
@@ -2446,6 +2451,11 @@ function switchSession(i){
   svcFromReceipt = sess.svc != null ? sess.svc : null;
   numPeople      = sess.numPeople || 4;
   splitMode      = sess.splitMode || 'item';
+  // Restore this bill's gcash details
+  if(sess.gcashNumber || sess.gcashName){
+    gcashNum  = sess.gcashNumber || '';
+    gcashName = sess.gcashName   || '';
+  }
   renderDash();
 }
 
