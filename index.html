@@ -1740,7 +1740,7 @@ function refreshSummary(){
     var border = idx>0 ? 'border-top:1px solid var(--border);' : '';
     return '<div style="'+border+'padding:'+(idx>0?'10':'0')+'px 0 10px;display:flex;align-items:center;gap:8px">'
       +'<div style="flex:1">'
-      +'<input value="'+it.name.replace(/"/g,'&quot;')+'" onchange="editItemName('+it.id+',this.value)" '
+      +'<input autocomplete="off" value="'+it.name.replace(/"/g,'&quot;')+'" onchange="editItemName('+it.id+',this.value)" '
       +'style="width:100%;font-size:14px;font-family:inherit;color:var(--text);padding:8px 10px;'
       +'background:var(--muted);border:1.5px solid var(--border);border-radius:8px;outline:none;'
       +'transition:border-color 0.15s" '
@@ -1767,7 +1767,7 @@ function refreshSummary(){
     var border = idx>0 ? 'border-top:1px solid var(--border);' : '';
     return '<div style="'+border+'padding:'+(idx>0?'10':'0')+'px 0 10px;display:flex;align-items:center;gap:8px">'
       +'<div style="flex:1">'
-      +'<input value="'+it.name.replace(/"/g,'&quot;')+'" onchange="editItemName('+it.id+',this.value)" '
+      +'<input autocomplete="off" value="'+it.name.replace(/"/g,'&quot;')+'" onchange="editItemName('+it.id+',this.value)" '
       +'style="width:100%;font-size:14px;font-family:inherit;color:var(--text);padding:8px 10px;'
       +'background:var(--muted);border:1.5px solid var(--border);border-radius:8px;outline:none;transition:border-color 0.15s" '
       +'onfocus="this.style.borderColor=\'var(--accent)\'" onblur="this.style.borderColor=\'var(--border)\'"/>'
@@ -1850,9 +1850,11 @@ function generateAndShow(){
   if(ni && ni.value.trim()) gcashNum = ni.value.trim();
   if(na && na.value.trim()) gcashName = na.value.trim();
 
-  // Show loading state
+  // Show loading state — reset hint first
   var lnkSection = el('linkReadySection');
   el('lnkUrl').textContent = 'Generating link…';
+  var hReset = el('lnkEqualHint');
+  if(hReset){ hReset.style.display='none'; hReset.textContent=''; }
   lnkSection.style.display = 'block';
   setTimeout(function(){ lnkSection.scrollIntoView({behavior:'smooth',block:'start'}); }, 80);
 
@@ -1866,7 +1868,16 @@ function generateAndShow(){
 
     el('lnkUrl').textContent = fullUrl;
     var h = el('lnkEqualHint');
-    if(h){ h.style.display = splitMode==='equal'?'block':'none'; h.textContent = '⚖️ Equal split — '+fmt(getPerPerson())+' per person'; }
+    var currentMode = curSess() ? curSess().splitMode : splitMode;
+    if(h){
+      if(currentMode==='equal'){
+        h.style.display='block';
+        h.textContent='⚖️ Equal split — '+fmt(getPerPerson())+' per person';
+      } else {
+        h.style.display='none';
+        h.textContent='';
+      }
+    }
 
     // Subscribe to realtime payments for this bill
     subscribeToPayments(currentBillId);
