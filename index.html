@@ -353,7 +353,7 @@ select:focus{border-color:var(--accent)}
   </div>
 
   <!-- Payment — compact chip if saved, full form if not -->
-  <div id="gcashSavedChip" style="display:none">
+  <div id="gcashSavedChip" style="display:none!important">
     <div class="card" style="display:flex;justify-content:space-between;align-items:center">
       <div style="display:flex;align-items:center;gap:10px">
         <div style="width:36px;height:36px;border-radius:10px;background:var(--abg);border:1px solid rgba(0,179,122,0.2);display:flex;align-items:center;justify-content:center;font-size:18px">💳</div>
@@ -824,15 +824,9 @@ function loadBillerFromSupabase(cb){
   if(!saved){ if(cb) cb(); return; }
   currentBillerId = saved;
   supaGet('billers?id=eq.'+saved+'&select=*').then(function(rows){
-    if(rows && rows[0]){
-      var b = rows[0];
-      gcashNum = b.account_number||''; gcashName = b.account_name||'';
-      paymentMethod = b.payment_method||''; qrDataUrl = b.qr_url||'';
-      var en = el('gcashNum');    if(en) en.value = gcashNum;
-      var ea = el('gcashName');   if(ea) ea.value = gcashName;
-      // paymentMethod and QR elements removed from UI
-      showGcashChip(gcashNum, gcashName, paymentMethod);
-    }
+    // Note: we keep currentBillerId so existing bills/links still work,
+    // but we do NOT pre-fill the form or memory. The biller enters
+    // fresh payment details each session for privacy.
     if(cb) cb();
   });
 }
@@ -1302,10 +1296,7 @@ function loadGcash(){
 }
 
 function showGcashChip(num, name, method){
-  el('gcashSavedChip').style.display = 'block';
-  el('gcashFullForm').style.display  = 'none';
-  el('gcashChipNum').textContent  = (method || 'Payment') + ' · ' + (num || '—');
-  el('gcashChipName').textContent = name || 'Account holder';
+  // Never auto-show saved chip — biller must enter details each session
 }
 
 function editGcash(){
