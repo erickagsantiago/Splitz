@@ -1791,6 +1791,23 @@ function setMode(m){
   el('modeItem').style.display  = m==='item'  ? 'block':'none';
   el('modeEqual').style.display = m==='equal' ? 'block':'none';
   if(items.length){ refreshSummary(); updateBillInSupabase(); }
+
+  // If link was already generated, regenerate it with new mode
+  var lnkSection = el('linkReadySection');
+  if(lnkSection && lnkSection.style.display !== 'none' && currentBillId){
+    var h = el('lnkEqualHint');
+    if(h){
+      if(m==='equal'){
+        h.style.display='block';
+        h.textContent='⚖️ Equal split — '+fmt(getPerPerson())+' per person';
+      } else {
+        h.style.display='none';
+        h.textContent='';
+      }
+    }
+    // Update bill in Supabase with new mode so splitters see correct view
+    updateBillInSupabase();
+  }
 }
 
 // ─── Session persistence ──────────────────────────────────────────────────────
