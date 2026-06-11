@@ -840,7 +840,15 @@ function loadBillerFromSupabase(cb){
 // ─── Bill (session) ───────────────────────────────────────────────────────────
 function saveBillToSupabase(cb){
   if(!currentBillerId){ saveBillerToSupabase(function(){ saveBillToSupabase(cb); }); return; }
-  var slug = (gcashNum||'pay').replace(/\s+/g,'')+'-'+Math.random().toString(36).slice(-4);
+  // Always update biller details before saving bill so latest gcash info is stored
+  if(gcashNum || gcashName){
+    supaPatch('billers?id=eq.'+currentBillerId, {
+      account_number: gcashNum,
+      account_name: gcashName,
+      payment_method: 'GCash'
+    });
+  }
+  var slug = 'bill-'+Math.random().toString(36).slice(2,10);
   var body = {
     biller_id:  currentBillerId,
     label: (el('billLabel') && el('billLabel').value.trim()) ? el('billLabel').value.trim() : 'Bill #'+(sessions.length+1),
@@ -999,6 +1007,10 @@ function subscribeToPayments(billId){
   realtimeChannel = ws;
   ws.onopen = function(){
     ws.send(JSON.stringify({ topic:'realtime:public:payments:bill_id=eq.'+billId, event:'phx_join', payload:{}, ref:'1' }));
+    // Heartbeat keeps the connection alive (Phoenix requires it every <60s)
+    ws._hb = setInterval(function(){
+      if(ws.readyState===1) ws.send(JSON.stringify({ topic:'phoenix', event:'heartbeat', payload:{}, ref:'hb' }));
+    }, 30000);
   };
   ws.onmessage = function(e){
     try{
@@ -1011,6 +1023,7 @@ function subscribeToPayments(billId){
     }catch(ex){}
   };
   ws.onclose = function(){
+    if(ws._hb) clearInterval(ws._hb);
     realtimeChannel = null;
     // Reconnect after 3s if bill still active
     setTimeout(function(){ if(currentBillId) subscribeToPayments(currentBillId); }, 3000);
@@ -1110,6 +1123,7 @@ var DEMO = [
 // ─── Helpers ──────────────────────────────────────────────────────────────────
 function fmt(n){ var num=Number(n); if(isNaN(num)) return '₱0.00'; return '₱'+num.toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function el(id){ return document.getElementById(id); }
+function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
 function getSubtotal(){ return items.reduce(function(s,i){return s+i.price;},0); }
 function getSvc(){
@@ -1218,6 +1232,11 @@ function checkPin(){
 }
 
 function goTo(n){
+  // Block splitters from accessing biller-only screens
+  if(!billerMode && (n===0 || n===6 || n===7)){
+    return; // Splitters stay on their own screens only
+  }
+
   // Snapshot gcash from inputs before leaving s0
   var ni = el('gcashNum'), na = el('gcashName');
   if(ni) gcashNum  = ni.value.trim() || gcashNum;
@@ -1447,85 +1466,8 @@ function initOnboard(){
 }
 
 
-function handleQrUpload(e){
-  var file = e.target.files[0];
-  if(!file) return;
-  var reader = new FileReader();
-  reader.onload = function(ev){
-    qrDataUrl = ev.target.result;
-    el('qrPreviewImg').src = qrDataUrl;
-    el('qrPreview').style.display = 'block';
-    el('qrUploadLabel').style.borderColor = 'var(--accent)';
-    el('qrUploadLabel').style.background  = 'var(--abg)';
-  };
-  reader.readAsDataURL(file);
-}
 
-function removeQr(){
-  qrDataUrl = '';
-  el('qrPreviewImg').src = '';
-  el('qrPreview').style.display = 'none';
-  el('qrUploadLabel').style.borderColor = '';
-  el('qrUploadLabel').style.background  = '';
-  el('qrFileInput').value = '';
-}
 
-// ─── Searchable payment method ────────────────────────────────────────────────
-var PAY_METHODS = [
-  {g:'E-Wallets',    items:['GCash','Maya','ShopeePay','GrabPay','Coins.ph','PayPal']},
-  {g:'Universal Banks', items:['BDO Unibank','BPI','Metrobank','UnionBank','Security Bank','RCBC','PNB','China Bank','EastWest Bank','PSBank']},
-  {g:'Digital Banks',   items:['Tonik','CIMB Bank PH','ING Bank PH','GoTyme Bank','UNO Digital Bank','Seabank']},
-  {g:'Rural & Thrift',  items:['Landbank','DBP','UCPB',"Robinson's Bank",'Starpay']},
-  {g:'Other',           items:['Cash','Other']}
-];
-var ALL_PAY = PAY_METHODS.reduce(function(a,g){return a.concat(g.items);}, []);
-
-function showPayList(){
-  filterPayMethods('');
-  el('payMethodList').style.display='block';
-}
-
-function filterPayMethods(q){
-  var list  = el('payMethodList');
-  var query = q.toLowerCase().trim();
-  var filtered = query ? ALL_PAY.filter(function(m){ return m.toLowerCase().indexOf(query)!==-1; }) : null;
-  var html = '';
-
-  if(filtered){
-    if(!filtered.length){
-      html='<div style="padding:12px 16px;font-size:13px;color:var(--dim)">No results — type to use custom</div>';
-    } else {
-      html = filtered.map(function(m){
-        return '<div onclick="selectPayMethod(\''+m.replace(/'/g,"\\'")+'\',this)" style="padding:11px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s" onmouseover="this.style.background=\'var(--muted)\'" onmouseout="this.style.background=\'\'">'+m+'</div>';
-      }).join('');
-    }
-  } else {
-    // Show grouped full list
-    html = PAY_METHODS.map(function(grp){
-      return '<div style="padding:6px 16px 2px;font-size:10px;font-weight:700;color:var(--dim);letter-spacing:0.8px;text-transform:uppercase;background:var(--muted)">'+grp.g+'</div>'
-        + grp.items.map(function(m){
-            return '<div onclick="selectPayMethod(\''+m.replace(/'/g,"\\'")+'\',this)" style="padding:11px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid var(--border);transition:background 0.1s" onmouseover="this.style.background=\'var(--muted)\'" onmouseout="this.style.background=\'\'">'+m+'</div>';
-          }).join('');
-    }).join('');
-  }
-
-  list.innerHTML = html;
-  list.style.display = 'block';
-}
-
-function selectPayMethod(val){
-  el('paymentMethod').value = val;
-  el('payMethodList').style.display = 'none';
-  paymentMethod = val;
-}
-
-// Close dropdown when clicking outside
-document.addEventListener('click', function(e){
-  var list = el('payMethodList');
-  if(list && !list.contains(e.target) && e.target.id!=='paymentMethod'){
-    list.style.display='none';
-  }
-});
 
 
 function editItemName(id, val){
@@ -1889,16 +1831,15 @@ function startNewReceipt(){
   el('tabEqual').className='stab';
   el('modeItem').style.display='block';
   el('modeEqual').style.display='none';
-  // Clear all payment details for fresh start
-  gcashNum=''; gcashName=''; paymentMethod='GCash'; qrDataUrl='';
+  // Clear UI inputs for fresh start — but keep gcashNum/gcashName in memory
+  // so the biller details stay attached to the new bill
   var gn=el('gcashNum'); if(gn) gn.value='';
   var ga=el('gcashName'); if(ga) ga.value='';
   el('gcashSavedChip').style.display='none';
   el('gcashFullForm').style.display='block';
-  if(currentBillerId){
-    supaPatch('billers?id=eq.'+currentBillerId, { account_number:'', account_name:'', payment_method:'GCash', qr_url:'' });
-  }
   currentBillId = null;
+  // Do NOT clear gcashNum/gcashName variables or Supabase biller record
+  // Biller details must stay so splitters can still pay via old links
 
 
 
@@ -1914,7 +1855,6 @@ function generateAndShow(){
   var ni=el('gcashNum'), na=el('gcashName');
   if(ni && ni.value.trim()) gcashNum = ni.value.trim();
   if(na && na.value.trim()) gcashName = na.value.trim();
-  if(gcashNum || gcashName) saveBillerToSupabase(function(){});
 
   // Show loading state
   var lnkSection = el('linkReadySection');
@@ -1951,7 +1891,7 @@ function renderLink(){
   if(!lnkEl) return; // element only exists in s0 summary section
   var sess = sessions[activeSession];
   if(sess && !sess.slug){
-    sess.slug = (gcashNum||'pay').replace(/\s+/g,'')+'-'+Math.random().toString(36).slice(-4);
+    sess.slug = 'bill-'+Math.random().toString(36).slice(2,10);
     persistSessions();
   }
   var slug = (sess && sess.slug) || 'pay-xxxx';
@@ -2017,7 +1957,7 @@ function copyLink(){
 
 // ─── Guest screen ─────────────────────────────────────────────────────────────
 function renderGuest(){
-  el('guestHost').textContent = gcashName || gcashNum || 'the host';
+  el('guestHost').textContent = gcashName || 'the biller';
   var claimed = getClaimedItemIds();
   picked = {};
 
@@ -2032,7 +1972,7 @@ function renderGuest(){
     el('alreadyPaidList').innerHTML = paidList.map(function(p){
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;last-child:margin-bottom:0">'
         +'<div style="width:24px;height:24px;border-radius:50%;background:var(--abg);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--accent)">'+p.name[0].toUpperCase()+'</div>'
-        +'<div style="font-size:13px;font-weight:600;color:var(--text)">'+p.name+'</div>'
+        +'<div style="font-size:13px;font-weight:600;color:var(--text)">'+esc(p.name)+'</div>'
         +'<span style="margin-left:auto;font-size:11px;color:var(--accent);font-weight:700">✓ Paid</span>'
         +'</div>';
     }).join('');
@@ -2086,7 +2026,7 @@ function renderGuestItems(){
     return '<div class="item-row" id="ir'+it.id+'" onclick="toggleItem('+it.id+')">'
       +'<div style="display:flex;gap:12px;align-items:center">'
       +'<div class="ichk" id="ic'+it.id+'"></div>'
-      +'<div style="font-size:14px;color:var(--mid)" id="in'+it.id+'">'+it.name+'</div>'
+      +'<div style="font-size:14px;color:var(--mid)" id="in'+it.id+'">'+esc(it.name)+'</div>'
       +'</div>'
       +'<div style="font-size:14px;font-weight:700;color:var(--dim)" id="ip'+it.id+'">'+fmt(it.price)+'</div>'
       +'</div>'
@@ -2150,9 +2090,9 @@ function goToPayment(){
   if(!name){ showToast("Please enter your name before paying"); el("guestName").focus(); return; }
   if(!isEq && !Object.keys(picked).some(function(k){return picked[k];})){showToast("Please select at least one item"); return;}
 
-  // NEGATIVE: biller has no payment info at all
-  if(!gcashNum && !gcashName && !qrDataUrl && !paymentMethod){
-    showToast('The biller hasn\'t set up payment details yet');
+  // Biller must have at least a GCash number for splitters to pay
+  if(!gcashNum){
+    showToast('The biller has not added a GCash number yet');
     return;
   }
 
@@ -2244,6 +2184,8 @@ function doSavePayment(payment){
 
 // ─── Dashboard ────────────────────────────────────────────────────────────────
 function renderDash(){
+  // Block splitters entirely
+  if(!billerMode) return;
   // Show empty state if no sessions
   if(sessions.length===0){
     el('noSessionMsg').style.display='block';
@@ -2368,7 +2310,7 @@ function renderDash(){
 
   // Always show payment link — generate one if not yet saved
   if(!sess.slug){
-    sess.slug = (gcashNum||'pay').replace(/\s+/g,'')+'-'+Math.random().toString(36).slice(-4);
+    sess.slug = 'bill-'+Math.random().toString(36).slice(2,10);
     persistSessions();
   }
   var dashAppUrl = window.location.origin + window.location.pathname;
@@ -2391,9 +2333,20 @@ function renderDash(){
     });
   });
 
-  // Itemized breakdown section
+  // Itemized breakdown section — for equal-split bills show people progress instead
+  var itemsHtml = '';
+  if(sess.splitMode === 'equal'){
+    var eqPaid = payments.filter(function(p){return p.confirmed;}).length;
+    var eqPending = payments.filter(function(p){return !p.confirmed;}).length;
+    itemsHtml = '<div style="margin-bottom:6px">'
+      + '<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin-bottom:10px">Equal Split Progress</div>'
+      + '<div style="font-size:14px;color:var(--text);padding:6px 0">'
+      + '<strong style="color:var(--accent)">'+eqPaid+'</strong> of '+sess.numPeople+' people paid'
+      + (eqPending>0 ? ' · <span style="color:var(--yellow)">'+eqPending+' pending</span>' : '')
+      + '</div></div>';
+  } else {
   var unclaimedCount = 0;
-  var itemsHtml = '<div style="margin-bottom:6px">'
+  itemsHtml = '<div style="margin-bottom:6px">'
     + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">'
     + '<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase">Item Tracker</div>'
     + '<button onclick="refreshDashFromServer()" style="font-size:11px;color:var(--accent);background:none;border:none;cursor:pointer;font-family:inherit;font-weight:700">↻ Refresh</button>'
@@ -2408,10 +2361,10 @@ function renderDash(){
         var dotStyle, symbol, payerText, nameColor;
         if(isConfirmed){
           dotStyle='background:var(--abg);border:1.5px solid var(--accent);color:var(--accent)';
-          symbol='✓'; payerText=confirmed.join(', '); nameColor='var(--accent)';
+          symbol='✓'; payerText=esc(confirmed.join(', ')); nameColor='var(--accent)';
         } else if(isPending){
           dotStyle='background:var(--ybg);border:1.5px solid var(--yellow);color:var(--yellow)';
-          symbol='⏳'; payerText=pending.join(', ')+' (pending)'; nameColor='var(--yellow)';
+          symbol='⏳'; payerText=esc(pending.join(', '))+' (pending)'; nameColor='var(--yellow)';
         } else {
           dotStyle='background:var(--muted);border:1.5px solid var(--border);color:var(--dim)';
           symbol='·'; payerText='Unclaimed'; nameColor='var(--dim)';
@@ -2419,7 +2372,7 @@ function renderDash(){
         return '<div style="display:flex;align-items:center;gap:10px;padding:8px 0;border-bottom:1px solid var(--border)">'
           +'<div style="width:20px;height:20px;border-radius:6px;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:900;'+dotStyle+'">'+symbol+'</div>'
           +'<div style="flex:1;min-width:0">'
-          +'<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+it.name+'</div>'
+          +'<div style="font-size:13px;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis">'+esc(it.name)+'</div>'
           +'<div style="font-size:11px;color:'+nameColor+'">'+payerText+'</div>'
           +'</div>'
           +'<div style="font-size:13px;font-weight:700;color:var(--mid)">'+fmt(it.price)+'</div>'
@@ -2427,6 +2380,7 @@ function renderDash(){
       }).join('')
     + (unclaimedCount > 0 ? '<div style="font-size:11px;color:var(--dim);text-align:right;padding-top:6px">'+unclaimedCount+' item'+(unclaimedCount>1?'s':'')+' unclaimed</div>' : '')
     + '</div>';
+  }
 
   // Payments list
   var paymentsHtml = payments.length===0
@@ -2439,9 +2393,9 @@ function renderDash(){
         var last  = idx===payments.length-1;
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0'+(last?'':';border-bottom:1px solid var(--border)')+'">'
           +'<div style="display:flex;gap:12px;align-items:center">'
-          +'<div class="avatar '+(p.confirmed?'av-green':'av-yellow')+'">'+p.name[0].toUpperCase()+'</div>'
+          +'<div class="avatar '+(p.confirmed?'av-green':'av-yellow')+'">'+esc(p.name[0]).toUpperCase()+'</div>'
           +'<div>'
-          +'<div style="font-size:14px;font-weight:700">'+p.name+'</div>'
+          +'<div style="font-size:14px;font-weight:700">'+esc(p.name)+'</div>'
           +'<div style="font-size:11px;color:var(--dim);margin-top:2px">'+prev+'</div>'
           +'</div></div>'
           +'<div style="text-align:right">'
