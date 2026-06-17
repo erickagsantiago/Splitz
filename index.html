@@ -197,6 +197,7 @@ select:focus{border-color:var(--accent)}
 .invite-input.error{border-color:#FFD6D6;animation:shake 0.3s ease}
 </style>
 </head>
+<script defer src="/_vercel/insights/script.js"></script>
 <body>
 
 <!-- ══ INVITE GATE (Biller only) ══ -->
@@ -226,7 +227,7 @@ select:focus{border-color:var(--accent)}
       ❌ Invalid code — please try again
     </div>
 
-    <button onclick="checkInviteCode()" style="width:100%;margin-top:16px;padding:15px;border-radius:12px;border:none;background:#fff;color:#00B37A;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
+    <button id="inviteSubmitBtn" onclick="checkInviteCode()" style="width:100%;margin-top:16px;padding:15px;border-radius:12px;border:none;background:#fff;color:#00B37A;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
       Enter →
     </button>
 
@@ -781,29 +782,51 @@ var currentBillerId = null; // UUID of biller row
 var currentBillId   = null; // UUID of active bill row
 var realtimeChannel = null; // Supabase realtime channel
 
+// ─── Error logging ────────────────────────────────────────────────────────────
+// Central place to surface errors that were previously swallowed silently.
+function logErr(ctx, e){
+  try{ console.error('[Splitz] ' + ctx + ':', e); }catch(_){}
+}
+
+// ─── fetch with retry + exponential backoff ───────────────────────────────────
+// fetch() only rejects on network failures (not HTTP error statuses), so retrying
+// here specifically targets flaky connections without masking 4xx/5xx responses.
+function fetchRetry(url, opts, tries){
+  tries = (tries == null) ? 3 : tries;
+  return fetch(url, opts).catch(function(err){
+    if(tries <= 1){ logErr('Network request failed ' + url, err); throw err; }
+    var waitMs = (4 - tries) * 600; // 600ms, 1200ms, …
+    return new Promise(function(res){ setTimeout(res, waitMs); })
+      .then(function(){ return fetchRetry(url, opts, tries - 1); });
+  });
+}
+
 // ─── Supabase helpers ─────────────────────────────────────────────────────────
 function supa(path, method, body){
-  return fetch(SUPA_URL + '/rest/v1/' + path, {
+  return fetchRetry(SUPA_URL + '/rest/v1/' + path, {
     method: method || 'GET',
-    headers: Object.assign({}, supaHeaders, { 'Prefer': method==='POST' ? 'return=representation' : 'return=representation' }),
+    headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=representation' }),
     body: body ? JSON.stringify(body) : undefined
-  }).then(function(r){ return r.json(); });
+  }).then(function(r){ return r.json(); })
+    .catch(function(e){ logErr('Supabase ' + (method||'GET') + ' ' + path, e); return null; });
 }
 
 function supaGet(path){ return supa(path, 'GET'); }
 function supaPost(path, body){ return supa(path, 'POST', body); }
 function supaPatch(path, body){
-  return fetch(SUPA_URL + '/rest/v1/' + path, {
+  return fetchRetry(SUPA_URL + '/rest/v1/' + path, {
     method: 'PATCH',
     headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=representation' }),
     body: JSON.stringify(body)
-  }).then(function(r){ return r.json(); });
+  }).then(function(r){ return r.json(); })
+    .catch(function(e){ logErr('Supabase PATCH ' + path, e); return null; });
 }
 function supaDelete(path){
-  return fetch(SUPA_URL + '/rest/v1/' + path, {
+  return fetchRetry(SUPA_URL + '/rest/v1/' + path, {
     method: 'DELETE',
     headers: supaHeaders
-  }).then(function(r){ return r.ok; });
+  }).then(function(r){ return r.ok; })
+    .catch(function(e){ logErr('Supabase DELETE ' + path, e); return false; });
 }
 
 // ─── Biller profile ───────────────────────────────────────────────────────────
@@ -847,11 +870,11 @@ function saveBillToSupabase(cb){
   var slug = 'bill-'+Math.random().toString(36).slice(2,10);
   var body = {
     biller_id:  currentBillerId,
-    label: (el('billLabel') && el('billLabel').value.trim()) ? el('billLabel').value.trim() : 'Bill #'+(sessions.length+1),
+    label: sanitizeName((el('billLabel') && el('billLabel').value) || '') || 'Bill #'+(sessions.length+1),
     split_mode: splitMode,
     num_people: numPeople,
     svc:        svcFromReceipt,
-    items:      JSON.stringify(items),
+    items:      JSON.stringify(sanitizeItems(items)),
     slug:       slug
   };
   supaPost('bills', body).then(function(rows){
@@ -905,7 +928,7 @@ function loadBillsFromSupabase(cb){
       sessions = results.map(function(r){
         var b = r.bill;
         var parsedItems = [];
-        try{ parsedItems = typeof b.items === 'string' ? JSON.parse(b.items) : (b.items||[]); }catch(e){}
+        try{ parsedItems = typeof b.items === 'string' ? JSON.parse(b.items) : (b.items||[]); }catch(e){ logErr('parse bill items '+b.id, e); }
         return {
           id:        b.id, supaId: b.id,
           label:     b.label||'Bill #1',
@@ -942,7 +965,7 @@ function loadBillBySlug(slug, cb){
       var biller = billers && billers[0] ? billers[0] : {};
       supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
         var parsedItems = [];
-        try{ parsedItems = typeof bill.items === 'string' ? JSON.parse(bill.items) : (bill.items||[]); }catch(e){}
+        try{ parsedItems = typeof bill.items === 'string' ? JSON.parse(bill.items) : (bill.items||[]); }catch(e){ logErr('parse bill items '+bill.id, e); }
         items = parsedItems;
         svcFromReceipt = bill.svc;
         numPeople = bill.num_people;
@@ -974,12 +997,14 @@ function loadBillBySlug(slug, cb){
 // ─── Payment (splitter confirms) ──────────────────────────────────────────────
 function savePaymentToSupabase(payment, cb){
   if(!currentBillId){ if(cb) cb(); return; }
+  var safeName = sanitizeName(payment.name);
+  if(!safeName){ showToast('Please enter a valid name'); if(cb) cb(); return; }
   supaPost('payments', {
     bill_id:       currentBillId,
-    splitter_name: payment.name,
-    item_ids:      payment.items||[],
+    splitter_name: safeName,
+    item_ids:      Array.isArray(payment.items) ? payment.items.map(Number).filter(function(n){return !isNaN(n);}) : [],
     equal_split:   payment.equalSplit||false,
-    amount:        payment.amount||0,
+    amount:        sanitizeAmount(payment.amount),
     confirmed:     false
   }).then(function(rows){
     if(rows && rows[0] && curSess()){
@@ -1021,7 +1046,7 @@ function subscribeToPayments(billId){
           showNewPaymentNotification(name || 'Someone');
         });
       }
-    }catch(ex){}
+    }catch(ex){ logErr('realtime message', ex); }
   };
   ws.onclose = function(){
     if(ws._hb) clearInterval(ws._hb);
@@ -1126,6 +1151,28 @@ function fmt(n){ var num=Number(n); if(isNaN(num)) return '₱0.00'; return '₱
 function el(id){ return document.getElementById(id); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+// ─── Input validation / sanitization ──────────────────────────────────────────
+// Validate untrusted values before they are persisted to Supabase.
+function sanitizeName(s){
+  return String(s == null ? '' : s).replace(/[<>]/g,'').trim().slice(0, 60);
+}
+function sanitizeAmount(n){
+  var num = Number(n);
+  if(!isFinite(num) || isNaN(num) || num < 0) return 0;
+  // Cap absurd values and round to 2 decimals to avoid float drift.
+  return Math.round(Math.min(num, 10000000) * 100) / 100;
+}
+function sanitizeItems(arr){
+  if(!Array.isArray(arr)) return [];
+  return arr.slice(0, 200).map(function(it){
+    return {
+      id:    Number(it && it.id) || 0,
+      name:  sanitizeName(it && it.name).slice(0, 80) || 'Item',
+      price: sanitizeAmount(it && it.price)
+    };
+  });
+}
+
 function getSubtotal(){ return items.reduce(function(s,i){return s+i.price;},0); }
 function getSvc(){
   if(svcFromReceipt !== null) return svcFromReceipt;
@@ -1136,7 +1183,36 @@ function getPerPerson(){ return numPeople > 0 ? Math.ceil(getTotal() / numPeople
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
 // ─── PIN ──────────────────────────────────────────────────────────────────────
-function hashPin(p){ var h=0; for(var i=0;i<p.length;i++){h=(h*31+p.charCodeAt(i))>>>0;} return h.toString(36); }
+// Legacy hash — kept ONLY to verify PINs created before the SHA-256 upgrade.
+function hashPinLegacy(p){ var h=0; for(var i=0;i<p.length;i++){h=(h*31+p.charCodeAt(i))>>>0;} return h.toString(36); }
+
+// Secure PIN hash using SHA-256 via the Web Crypto API. Returns a Promise<string>.
+function hashPin(p){
+  if(!(window.crypto && crypto.subtle)){
+    // Insecure/older context — fall back to legacy so the app still functions.
+    return Promise.resolve(hashPinLegacy(p));
+  }
+  var data = new TextEncoder().encode('splitz_pin_v2:' + p);
+  return crypto.subtle.digest('SHA-256', data).then(function(buf){
+    var bytes = Array.prototype.map.call(new Uint8Array(buf), function(b){
+      return ('0' + b.toString(16)).slice(-2);
+    });
+    return 'v2:' + bytes.join('');
+  });
+}
+
+// Verify an entered PIN against the stored hash, migrating legacy hashes to v2.
+function verifyPin(entered, saved){
+  return hashPin(entered).then(function(h){
+    if(h === saved) return true;
+    // Legacy fallback: stored hash predates the "v2:" prefix.
+    if(saved && saved.indexOf('v2:') !== 0 && hashPinLegacy(entered) === saved){
+      try{ localStorage.setItem('splitsies_pin', h); }catch(e){ logErr('migrate pin', e); }
+      return true;
+    }
+    return false;
+  });
+}
 
 function getSavedPin(){ try{ return localStorage.getItem('splitsies_pin')||''; }catch(e){ return ''; } }
 
@@ -1207,7 +1283,9 @@ function checkPin(){
     el('pinSub').style.color = '';
   } else if(pinMode==='confirm'){
     if(pinBuffer===pinTemp){
-      try{ localStorage.setItem('splitsies_pin', hashPin(pinBuffer)); }catch(e){}
+      hashPin(pinBuffer).then(function(h){
+        try{ localStorage.setItem('splitsies_pin', h); }catch(e){ logErr('save pin', e); }
+      });
       pinUnlocked = true;
       try{ sessionStorage.setItem('splitz_pin_unlocked','1'); }catch(e){}
       el('pinSub').textContent = '✓ PIN saved!';
@@ -1225,13 +1303,15 @@ function checkPin(){
   } else {
     // verify mode
     var saved = getSavedPin();
-    if(hashPin(pinBuffer)===saved){
-      pinUnlocked = true;
-      try{ sessionStorage.setItem('splitz_pin_unlocked','1'); }catch(e){}
-      goTo(6);
-    } else {
-      shakeAndReset('Wrong PIN — try again');
-    }
+    verifyPin(pinBuffer, saved).then(function(ok){
+      if(ok){
+        pinUnlocked = true;
+        try{ sessionStorage.setItem('splitz_pin_unlocked','1'); }catch(e){}
+        goTo(6);
+      } else {
+        shakeAndReset('Wrong PIN — try again');
+      }
+    });
   }
 }
 
@@ -1351,7 +1431,8 @@ function showSplitterOnboard(){
 
 
 // ─── Invite gate ──────────────────────────────────────────────────────────────
-var INVITE_CODE = 'EGS911'; // ← change this to your private code
+// The invite code is validated server-side (/api/invite) so it is never exposed
+// in the client bundle. Set INVITE_CODE in the Vercel environment variables.
 var billerMode  = false;       // true = biller (passed code), false = splitter only
 
 function initInviteGate(){
@@ -1370,25 +1451,47 @@ function initInviteGate(){
   lockBillerUI();
 }
 
+function rejectInviteCode(){
+  var input = el('inviteInput');
+  var err   = el('inviteError');
+  if(input) input.className = 'invite-input error';
+  if(err) err.style.display = 'block';
+  setTimeout(function(){ if(input){ input.className='invite-input'; input.value=''; } }, 800);
+}
+
 function checkInviteCode(){
   var val = (el('inviteInput').value||'').trim().toUpperCase();
-  if(val === INVITE_CODE.toUpperCase()){
-    // Correct — unlock biller
-    try{ sessionStorage.setItem('splitsies_biller','1'); }catch(e){}
-    billerMode = true;
-    var gate = el('inviteGate');
-    gate.style.opacity='0';
-    gate.style.transition='opacity 0.3s';
-    setTimeout(function(){ gate.style.display='none'; gate.style.opacity=''; }, 300);
-    showBillerUI();
-  } else {
-    // Wrong code
-    var input = el('inviteInput');
-    var err   = el('inviteError');
-    input.className = 'invite-input error';
-    err.style.display = 'block';
-    setTimeout(function(){ input.className='invite-input'; input.value=''; }, 800);
-  }
+  if(!val){ rejectInviteCode(); return; }
+
+  var btn = el('inviteSubmitBtn');
+  if(btn) btn.disabled = true;
+
+  // Validate against the serverless endpoint — the code never lives client-side.
+  fetchRetry('/api/invite', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ code: val })
+  })
+  .then(function(r){ return r.json(); })
+  .then(function(data){
+    if(btn) btn.disabled = false;
+    if(data && data.ok){
+      try{ sessionStorage.setItem('splitsies_biller','1'); }catch(e){}
+      billerMode = true;
+      var gate = el('inviteGate');
+      gate.style.opacity='0';
+      gate.style.transition='opacity 0.3s';
+      setTimeout(function(){ gate.style.display='none'; gate.style.opacity=''; }, 300);
+      showBillerUI();
+    } else {
+      rejectInviteCode();
+    }
+  })
+  .catch(function(e){
+    if(btn) btn.disabled = false;
+    logErr('invite check', e);
+    showToast('Could not verify code — check your connection');
+  });
 }
 
 function enterAsSplitter(){
@@ -1658,7 +1761,7 @@ function runAI(file){
       ]}]
     });
 
-    fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
+    fetchRetry('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
     .then(function(r){ return r.json(); })
     .then(function(data){
       clearTimeout(timeoutMsg);
@@ -1709,6 +1812,7 @@ function runAI(file){
     })
     .catch(function(err){
       clearTimeout(timeoutMsg);
+      logErr('receipt OCR request', err);
       showToast('Connection error — check your internet and try again');
       items = [];
       svcFromReceipt = null;
@@ -2166,10 +2270,12 @@ function confirmSent(){
   // For item splits: re-fetch latest payments first to catch concurrency conflicts
   if(!isEq && currentBillId){
     supaGet('payments?bill_id=eq.'+currentBillId+'&select=*').then(function(latestPmts){
-      // Build set of already-claimed item IDs from confirmed payments
+      // Build set of already-claimed item IDs from ALL existing payments
+      // (pending OR confirmed). An item picked by anyone else — even before the
+      // biller confirms — is taken, so two splitters can't grab the same item.
       var nowClaimed = {};
       (latestPmts||[]).forEach(function(p){
-        if(p.confirmed)(p.item_ids||[]).forEach(function(id){ nowClaimed[id]=p.splitter_name; });
+        (p.item_ids||[]).forEach(function(id){ nowClaimed[id]=p.splitter_name; });
       });
       // Check if any of the splitter's picked items were just claimed
       var conflicts = pickedIds.filter(function(id){ return nowClaimed[id]; });
