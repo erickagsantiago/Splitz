@@ -600,6 +600,13 @@ select:focus{border-color:var(--accent)}
   <div class="card card-yellow">
     <div style="font-size:12px;color:var(--yellow);line-height:1.6">⚠️ <span id="payWarnHost">the biller</span> will confirm once they receive your payment. You'll show as <strong>Pending</strong> until then.</div>
   </div>
+
+  <div class="card" style="background:var(--muted);border-style:dashed">
+    <div style="font-size:12px;color:var(--mid);line-height:1.7">
+      🛡️ <strong>Before you send:</strong> Make sure the account name in your GCash confirmation matches <strong id="verifyHost">the biller's name</strong> shown above. If it doesn't match or you're unsure, message the biller to verify first.
+      <div style="margin-top:8px;color:var(--dim);font-size:11px">Splitz only shares payment details — we don't process payments and aren't responsible for transfers sent to the wrong account.</div>
+    </div>
+  </div>
 </div>
 
 <!-- ══ S6: Dashboard ══ -->
@@ -844,7 +851,7 @@ function saveBillToSupabase(cb){
       payment_method: 'GCash'
     });
   }
-  var slug = 'bill-'+Math.random().toString(36).slice(2,10);
+  var slug = genSlug();
   var body = {
     biller_id:  currentBillerId,
     label: sanitizeName((el('billLabel') && el('billLabel').value) || '') || 'Bill #'+(sessions.length+1),
@@ -1134,6 +1141,16 @@ var DEMO = [
 function fmt(n){ var num=Number(n); if(isNaN(num)) return '₱0.00'; return '₱'+num.toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
 function el(id){ return document.getElementById(id); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+// ─── Bill links ───────────────────────────────────────────────────────────────
+var APP_BASE_URL = 'https://splitzbill.app';
+// Short 6-char base36 slug, e.g. splitzbill.app/?b=k3p9za
+function genSlug(){
+  var c = 'abcdefghijklmnopqrstuvwxyz0123456789', s = '';
+  for(var i=0;i<6;i++) s += c.charAt(Math.floor(Math.random()*36));
+  return s;
+}
+function billUrl(slug){ return APP_BASE_URL + '/?b=' + slug; }
 
 // ─── Input validation / sanitization ──────────────────────────────────────────
 // Validate untrusted values before they are persisted to Supabase.
@@ -1899,9 +1916,7 @@ function generateAndShow(){
   saveBillToSupabase(function(slug){
     if(!slug){ showToast('Could not save — check your connection'); return; }
 
-    // Use real deployed URL
-    var appUrl = window.location.origin + window.location.pathname;
-    var fullUrl = appUrl + '?bill=' + slug;
+    var fullUrl = billUrl(slug);
 
     el('lnkUrl').textContent = fullUrl;
     var h = el('lnkEqualHint');
@@ -1933,12 +1948,11 @@ function renderLink(){
   if(!lnkEl) return; // element only exists in s0 summary section
   var sess = sessions[activeSession];
   if(sess && !sess.slug){
-    sess.slug = 'bill-'+Math.random().toString(36).slice(2,10);
+    sess.slug = genSlug();
     persistSessions();
   }
   var slug = (sess && sess.slug) || 'pay-xxxx';
-  var appUrlR = window.location.origin + window.location.pathname;
-  lnkEl.textContent = appUrlR + '?bill=' + slug;
+  lnkEl.textContent = billUrl(slug);
   var h = el('lnkEqualHint');
   if(h){
     h.style.display = splitMode==='equal'?'block':'none';
@@ -2167,6 +2181,7 @@ function goToPayment(){
   el('payGcashName').textContent= gcashName || '—';
   el('payGcashNum').textContent = gcashNum  || '—';
   el('payWarnHost').textContent = 'the biller';
+  el('verifyHost').textContent  = gcashName ? '“'+gcashName+'”' : "the biller's name";
 
   // Show QR if uploaded
   if(qrDataUrl){
@@ -2379,11 +2394,10 @@ function renderDash(){
 
   // Always show payment link — generate one if not yet saved
   if(!sess.slug){
-    sess.slug = 'bill-'+Math.random().toString(36).slice(2,10);
+    sess.slug = genSlug();
     persistSessions();
   }
-  var dashAppUrl = window.location.origin + window.location.pathname;
-  el('dashLinkUrl').textContent = dashAppUrl + '?bill=' + sess.slug;
+  el('dashLinkUrl').textContent = billUrl(sess.slug);
   el('dashLinkCard').style.display = 'block';
 
   // Fully paid banner — show only when owed = 0, forConfirm = 0, and there are confirmed payments
@@ -2606,7 +2620,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Check if splitter is opening a bill link (?bill=slug)
   var urlParams = new URLSearchParams(window.location.search);
-  var billSlug  = urlParams.get('bill');
+  var billSlug  = urlParams.get('b') || urlParams.get('bill');
 
   if(billSlug){
     // Splitter flow — load bill from Supabase by slug
