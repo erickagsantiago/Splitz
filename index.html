@@ -498,7 +498,7 @@ select:focus{border-color:var(--accent)}
 
   <div class="card mt16">
     <label class="flabel">Your Name</label>
-    <input type="text" id="guestName" placeholder="e.g. Julius" oninput="updateGuestCalc()"/>
+    <input type="text" id="guestName" placeholder="Your name" oninput="updateGuestCalc();this.style.borderColor='';this.style.background='';"/>
     <div id="savedNameHint" style="display:none"></div>
   </div>
 
@@ -2105,7 +2105,15 @@ function goToPayment(){
     var gSub   = items.reduce(function(s,it){return s+(picked[it.id]?it.price:0);},0);
     gTot = gSub + (allSub>0 ? Math.round((gSub/allSub)*getSvc()) : 0);
   }
-  if(!name){ showToast("Please enter your name before paying"); el("guestName").focus(); return; }
+  if(!name){
+    var inp = el('guestName');
+    inp.style.borderColor = '#E03B3B';
+    inp.style.background  = 'rgba(224,59,59,0.06)';
+    inp.focus();
+    inp.scrollIntoView({ behavior:'smooth', block:'center' });
+    showToast('Please enter your name first');
+    return;
+  }
   if(!isEq && !Object.keys(picked).some(function(k){return picked[k];})){showToast("Please select at least one item"); return;}
 
   // Biller must have at least a GCash number for splitters to pay
