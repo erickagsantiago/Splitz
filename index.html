@@ -1575,7 +1575,7 @@ function deleteBill(){
   var hasPaid = sess.payments && sess.payments.length > 0;
   var msg     = hasPaid
     ? sess.payments.length + ' splitter' + (sess.payments.length > 1 ? 's have' : ' has') + ' already paid for this bill. Are you sure you want to delete it? This cannot be undone.'
-    : 'Delete "' + label + '"? This cannot be undone.';
+    : 'Delete "' + esc(label) + '"? This cannot be undone.';
 
   showDeleteConfirm(msg, function(){
     var supaId = sess.supaId;
@@ -2256,7 +2256,7 @@ function doSavePayment(payment){
     el('noSessionMsg').style.display='none';
     el('sessionDetail').style.display='none';
     el('sentHead').style.display='block';
-    el('sentMsg').innerHTML = 'Waiting for <strong>'+(gcashName||'the biller')+'</strong> to confirm your payment.'
+    el('sentMsg').innerHTML = 'Waiting for <strong>'+esc(gcashName||'the biller')+'</strong> to confirm your payment.'
       + '<div style="font-size:32px;font-weight:900;color:var(--accent);letter-spacing:-1px;margin:16px 0 8px">'+fmt(payment.amount)+'</div>'
       + '<div style="font-size:14px;color:var(--mid)">Thank you! 🙏</div>';
     window.scrollTo(0,0);
@@ -2338,7 +2338,7 @@ function renderDash(){
         +'<div style="width:24px;height:24px;border-radius:6px;background:'+(isActive?'var(--accent)':'var(--border)')+';'
         +'display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;'
         +'color:'+(isActive?'#fff':'var(--mid)')+';margin:0 auto 4px">'+( i+1)+'</div>'
-        +'<div style="font-size:10px;font-weight:700;color:'+(isActive?'var(--accent)':'var(--text)')+';line-height:1.2;word-break:break-word">'+shortLabel+'</div>'
+        +'<div style="font-size:10px;font-weight:700;color:'+(isActive?'var(--accent)':'var(--text)')+';line-height:1.2;word-break:break-word">'+esc(shortLabel)+'</div>'
         +'<div style="font-size:9px;color:var(--dim);margin-top:2px">'+s.date.split(' · ')[0]+'</div>'
         +'<div style="font-size:10px;font-weight:700;color:var(--text);margin-top:3px">'+fmt(sTot)+'</div>'
         +'</div>';
@@ -2477,7 +2477,7 @@ function renderDash(){
         var last  = idx===payments.length-1;
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0'+(last?'':';border-bottom:1px solid var(--border)')+'">'
           +'<div style="display:flex;gap:12px;align-items:center">'
-          +'<div class="avatar '+(p.confirmed?'av-green':'av-yellow')+'">'+esc(p.name[0]).toUpperCase()+'</div>'
+          +'<div class="avatar '+(p.confirmed?'av-green':'av-yellow')+'">'+esc((p.name||'?').charAt(0).toUpperCase())+'</div>'
           +'<div>'
           +'<div style="font-size:14px;font-weight:700">'+esc(p.name)+'</div>'
           +'<div style="font-size:11px;color:var(--dim);margin-top:2px">'+prev+'</div>'
