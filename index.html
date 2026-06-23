@@ -337,7 +337,11 @@ select:focus{border-color:var(--accent)}
       <div class="slabel">GCash Payment Details</div>
       <div class="field">
         <label class="flabel">GCash Number</label>
-        <input type="text" id="gcashNum" placeholder="09XX XXX XXXX"/>
+        <div style="position:relative">
+          <input type="password" id="gcashNum" placeholder="09XX XXX XXXX" inputmode="numeric" autocomplete="off" style="padding-right:48px"/>
+          <button type="button" id="gcashNumToggle" onclick="toggleGcashNum()" aria-label="Show or hide GCash number"
+            style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--dim);font-size:18px;padding:0">👁️</button>
+        </div>
       </div>
       <div class="field">
         <label class="flabel">Account Name</label>
@@ -1360,6 +1364,14 @@ function loadGcash(){
 
 function showGcashChip(num, name, method){
   // Never auto-show saved chip — biller must enter details each session
+}
+
+function toggleGcashNum(){
+  var inp = el('gcashNum'), btn = el('gcashNumToggle');
+  if(!inp) return;
+  var hidden = inp.type === 'password';
+  inp.type = hidden ? 'text' : 'password';
+  if(btn) btn.textContent = hidden ? '🙈' : '👁️';
 }
 
 function editGcash(){
