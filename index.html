@@ -1096,7 +1096,11 @@ function refreshDashFromServer(cb){
       else existing.push(mapped);
     });
     var s6 = el('s6');
-    if(s6 && s6.classList.contains('active')) renderDash();
+    // Don't repaint the dashboard while the "Payment Sent" confirmation is on
+    // screen (e.g. biller test-paying via Guest View) — it would bleed the
+    // dashboard in under the confirmation message.
+    var sentVisible = el('sentHead') && el('sentHead').style.display !== 'none';
+    if(s6 && s6.classList.contains('active') && !sentVisible) renderDash();
     if(cb) cb(pmts && pmts[pmts.length-1] ? pmts[pmts.length-1].splitter_name : null);
   });
 }
@@ -1972,19 +1976,13 @@ function showConfirmReceiptSheet(){
   var subtotal = getSubtotal();
   if(subtotal <= 0){ showToast('Please add valid item prices before generating a link'); return; }
 
-  var ni=el('gcashNum'), na=el('gcashName');
-  var num = (ni && ni.value.trim()) ? ni.value.trim() : gcashNum;
-  var name = (na && na.value.trim()) ? na.value.trim() : gcashName;
-
   var svc = getSvc();
   var total = getTotal();
   var rows = items.map(function(it){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #E2E8F0"><span style="color:#5A6A85">'+esc(it.name)+'</span><span style="font-weight:700">'+fmt(it.price)+'</span></div>'; }).join('');
   var svcRow = svc > 0 ? '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #E2E8F0"><span style="color:#5A6A85">Service Charge</span><span style="font-weight:700">'+fmt(svc)+'</span></div>' : '';
-  var gcashRow = num ? '<div style="margin-top:12px;padding-top:12px;border-top:2px solid #E2E8F0;display:flex;justify-content:space-between"><span style="color:#5A6A85">GCash</span><span style="font-weight:700">'+esc(num)+(name?' · '+esc(name):'')+'</span></div>' : '';
 
   el('confirmReceiptSummary').innerHTML = rows + svcRow +
-    '<div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:15px"><span style="font-weight:800">Total</span><span style="font-weight:800;color:var(--accent)">'+fmt(total)+'</span></div>' +
-    gcashRow;
+    '<div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:15px"><span style="font-weight:800">Total</span><span style="font-weight:800;color:var(--accent)">'+fmt(total)+'</span></div>';
 
   el('confirmReceiptOverlay').style.display = 'block';
   el('confirmReceiptSheet').style.display = 'block';
@@ -2381,6 +2379,10 @@ function doSavePayment(payment){
 function renderDash(){
   // Block splitters entirely
   if(!billerMode) return;
+  // Restore the dashboard chrome — in case we're returning from a Guest View
+  // test-payment that left the "Payment Sent" confirmation showing.
+  if(el('dashHead')) el('dashHead').style.display='block';
+  if(el('sentHead')) el('sentHead').style.display='none';
   // Show empty state if no sessions
   if(sessions.length===0){
     el('noSessionMsg').style.display='block';
@@ -2402,17 +2404,17 @@ function renderDash(){
   var tabsHtml = sessions.map(function(s,i){
       var isActive  = i===activeSession;
       var sItems    = s.items;
-      var sSvc      = s.svc !== null ? s.svc : Math.round(sItems.reduce(function(a,b){return a+b.price;},0)*SVC);
+      var sSvc      = s.svc !== null ? s.svc : 0;
       var sTot      = sItems.reduce(function(a,b){return a+b.price;},0) + sSvc;
       var sConf     = s.payments.filter(function(p){return p.confirmed;}).reduce(function(a,p){
         if(p.equalSplit||p.amount) return a+(p.amount||0);
         var sub=p.items.reduce(function(x,id){var it=sItems.find(function(i){return i.id===id;});return x+(it?it.price:0);},0);
-        return a+sub+Math.round(sub*SVC);
+        return a+sub;
       },0);
       var sForConf  = s.payments.filter(function(p){return !p.confirmed;}).reduce(function(a,p){
         if(p.equalSplit||p.amount) return a+(p.amount||0);
         var sub=p.items.reduce(function(x,id){var it=sItems.find(function(i){return i.id===id;});return x+(it?it.price:0);},0);
-        return a+sub+Math.round(sub*SVC);
+        return a+sub;
       },0);
       var sOwed     = Math.max(0, sTot-sConf-sForConf);
       var isSettled = sOwed===0 && sForConf===0 && sConf>0;
@@ -2465,7 +2467,7 @@ function renderDash(){
   if(!sess) return;
 
   var sessItems = sess.items;
-  var sessSvc   = sess.svc !== null ? sess.svc : Math.round(sessItems.reduce(function(s,i){return s+i.price;},0)*SVC);
+  var sessSvc   = sess.svc !== null ? sess.svc : 0;
   var sessTot   = sessItems.reduce(function(s,i){return s+i.price;},0) + sessSvc;
   var payments  = sess.payments;
 
@@ -2475,7 +2477,7 @@ function renderDash(){
       var it = sessItems.find(function(i){return i.id===id;});
       return s+(it?it.price:0);
     },0);
-    return sub + Math.round(sub*SVC);
+    return sub;
   }
 
   var confirmed   = payments.filter(function(p){return p.confirmed;}).reduce(function(s,p){return s+calcSessAmt(p);},0);
@@ -2630,7 +2632,7 @@ function calcAmt(p){
     var it = items.find(function(i){return i.id===id;});
     return s+(it?it.price:0);
   },0);
-  return sub + Math.round(sub*SVC);
+  return sub;
 }
 
 function confirmPay(idx){
