@@ -413,7 +413,10 @@ select:focus{border-color:var(--accent)}
     <div class="card">
       <div class="row" style="padding-top:0"><div style="color:var(--mid);font-size:14px">Subtotal</div><div style="font-size:14px;font-weight:600" id="subtotalEl">—</div></div>
       <div class="divider"></div>
-      <div class="row" id="svcRow"><div style="color:var(--mid);font-size:14px" id="svcLabel">Service Charge</div><div style="font-size:14px;font-weight:600" id="svcEl">—</div></div>
+      <div class="row" id="svcRow"><div style="color:var(--mid);font-size:14px" id="svcLabel">Service Charge</div>
+        <input type="number" id="svcInput" inputmode="decimal" placeholder="0" onchange="editSvc(this.value)" onfocus="this.select()"
+          style="width:90px;font-size:14px;font-weight:700;color:var(--accent);background:var(--muted);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;outline:none;text-align:right;font-family:inherit"/>
+      </div>
       <div class="divider" id="svcDivider"></div>
       <div class="row" style="padding-bottom:0"><div style="font-weight:700;font-size:16px">Total</div><div style="font-size:28px;font-weight:900;color:var(--accent);letter-spacing:-1px" id="totalEl">—</div></div>
     </div>
@@ -1765,7 +1768,7 @@ function runAI(file){
       stream:false,
       messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},
-        {type:'text',text:'Look at this receipt image and extract all food and drink items with their prices.\n\nRules:\n- Extract every line item (food/drinks only)\n- Use the unit price per item (not total if qty > 1)\n- Expand abbreviations to full names\n- Skip: totals, subtotals, VAT lines, gross sales, service charge lines\n- If you see a service charge amount, extract it separately\n\nYou MUST respond with ONLY this JSON format, nothing else, no markdown:\n{"items":[{"name":"Item Name","unitPrice":100,"qty":1}],"serviceCharge":null}\n\nIf you cannot read the receipt, still return: {"items":[],"serviceCharge":null}'}
+        {type:'text',text:'Look at this receipt image and extract all food and drink items with their prices.\n\nRules:\n- Extract every line item (food/drinks only) into "items"\n- Use the unit price per item (not the line total if qty > 1)\n- Expand abbreviations to full names\n- Do NOT put totals, subtotals, VAT/tax lines, or gross sales into "items"\n\nSERVICE CHARGE (important): Look carefully for a service charge line — it may be labeled "Service Charge", "Svc Chg", "Svc", "Service Fee", "SC", or a percentage like "10% Service". The amount may be in a separate/misaligned column. If one exists, put its peso AMOUNT (not the percentage) in "serviceCharge". If there is genuinely none, use null. Note the row label and its amount may not line up horizontally — match by reading order.\n\nYou MUST respond with ONLY this JSON format, nothing else, no markdown:\n{"items":[{"name":"Item Name","unitPrice":100,"qty":1}],"serviceCharge":null}\n\nIf you cannot read the receipt, still return: {"items":[],"serviceCharge":null}'}
       ]}]
     });
 
@@ -1844,17 +1847,27 @@ function showSummary(){
   setTimeout(function(){ el('summarySection').scrollIntoView({behavior:'smooth',block:'start'}); },80);
 }
 
+function editSvc(v){
+  var n = parseFloat(v);
+  // Blank or invalid clears the service charge entirely (treated as none).
+  svcFromReceipt = (v === '' || v == null || isNaN(n)) ? null : sanitizeAmount(n);
+  refreshSummary();
+}
+
 function refreshSummary(){
   var sub = getSubtotal();
   var svc = getSvc();
   var tot = sub+svc;
-  // Only show the service-charge line if the receipt actually had one.
-  var hasSvc = svcFromReceipt !== null && svc > 0;
-  el('svcRow').style.display = hasSvc ? '' : 'none';
-  el('svcDivider').style.display = hasSvc ? '' : 'none';
-  el('svcLabel').textContent = 'Service Charge (as charged in receipt)';
+  // Service charge is always editable so the biller can add it when the AI
+  // misses it (or correct/remove it). Show the row whenever there are items.
+  el('svcRow').style.display = '';
+  el('svcDivider').style.display = '';
+  el('svcLabel').textContent = svcFromReceipt !== null ? 'Service Charge' : 'Service Charge (add if any)';
+  var svcInput = el('svcInput');
+  if(svcInput && document.activeElement !== svcInput){
+    svcInput.value = svcFromReceipt !== null ? svcFromReceipt : '';
+  }
   el('subtotalEl').textContent = fmt(sub);
-  el('svcEl').textContent = fmt(svc);
   el('totalEl').textContent = fmt(tot);
 
   // Items list — editable
