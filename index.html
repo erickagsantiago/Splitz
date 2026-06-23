@@ -1817,7 +1817,7 @@ function runAI(file){
         } else if(data && data.error) {
           var et = data.error.type;
           if(et === 'overloaded_error' || et === 'rate_limit_error' || et === 'api_error'){
-            el('aiLog').textContent = '⚠️ Splitz is overloaded right now (too many people scanning at once). Please wait a moment and tap Upload Receipt again.';
+            el('aiLog').textContent = 'Please wait a moment and tap Upload Receipt again — Splitz is currently overloaded.';
           } else {
             el('aiLog').textContent = 'API Error: ' + JSON.stringify(data.error).slice(0,300);
           }
