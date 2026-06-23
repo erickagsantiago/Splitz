@@ -513,7 +513,7 @@ select:focus{border-color:var(--accent)}
 
   <div class="card mt16">
     <label class="flabel">Your Name</label>
-    <input type="text" id="guestName" oninput="updateGuestCalc();this.style.borderColor='';this.style.background='';"/>
+    <input type="text" id="guestName" oninput="updateGuestCalc();saveSplitterProgress('pick');this.style.borderColor='';this.style.background='';"/>
     <div id="savedNameHint" style="display:none"></div>
   </div>
 
@@ -1143,6 +1143,7 @@ var gcashName  = '';
 var paymentMethod = 'GCash';
 var qrDataUrl  = ''; // base64 of uploaded QR image
 var guestAmountToPay = 0;
+var splitterSlug = ''; // set when a splitter opens a ?b= link; keys saved progress
 var pinBuffer  = '';
 var pinMode    = 'verify'; // 'set' | 'confirm' | 'verify'
 var pinTemp    = '';       // holds first entry during set flow
@@ -1655,6 +1656,42 @@ function loadSavedGuestName(){
 
 function saveGuestName(name){
   // Saving disabled — name is cleared on every visit.
+}
+
+// ─── Splitter progress (survives the GCash app round-trip) ────────────────────
+// When a splitter taps "Open GCash App", the in-app browser (Messenger/Telegram)
+// is backgrounded and usually reloads the page fresh on return — wiping the name,
+// picked items and which screen they were on. We snapshot that progress to
+// localStorage keyed by the bill slug and restore it on the next load so they
+// land right back where they left off instead of redoing everything.
+function splitterProgressKey(){ return splitterSlug ? 'splitz_progress_'+splitterSlug : ''; }
+
+function saveSplitterProgress(stage){
+  if(billerMode || !splitterSlug) return;
+  try{
+    var nameEl = el('guestName');
+    var name = nameEl ? (nameEl.value||'').trim() : '';
+    var pickedIds = items.filter(function(it){return picked[it.id];}).map(function(it){return it.id;});
+    localStorage.setItem(splitterProgressKey(), JSON.stringify({
+      name: name, picked: pickedIds, stage: stage||'pick', ts: Date.now()
+    }));
+  }catch(e){}
+}
+
+function clearSplitterProgress(){
+  try{ if(splitterSlug) localStorage.removeItem(splitterProgressKey()); }catch(e){}
+}
+
+function restoreSplitterProgress(){
+  if(!splitterSlug) return null;
+  try{
+    var raw = localStorage.getItem(splitterProgressKey());
+    if(!raw) return null;
+    var p = JSON.parse(raw);
+    // Expire after 12h so a stale visit doesn't silently prefill old selections.
+    if(!p || !p.ts || (Date.now()-p.ts) > 12*60*60*1000){ clearSplitterProgress(); return null; }
+    return p;
+  }catch(e){ return null; }
 }
 
 function clearSavedName(){
@@ -2178,6 +2215,7 @@ function toggleItem(id){
   if(nm)  nm.style.color = on?'var(--text)':'var(--mid)';
   if(pr)  pr.style.color = on?'var(--accent)':'var(--dim)';
   updateGuestCalc();
+  saveSplitterProgress('pick');
 }
 
 function updateGuestCalc(){
@@ -2268,6 +2306,10 @@ function goToPayment(){
   // Show account name section only if name exists
   el('payNameSection').style.display = gcashName ? 'block' : 'none';
 
+  // Snapshot that they reached the payment screen so a GCash app round-trip
+  // brings them straight back here instead of the pick screen.
+  saveSplitterProgress('pay');
+
   goTo(5);
 }
 
@@ -2319,6 +2361,8 @@ function confirmSent(){
 
 function doSavePayment(payment){
   savePaymentToSupabase(payment, function(){
+    // Payment recorded — the saved progress is no longer needed.
+    clearSplitterProgress();
     document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
     el('s6').classList.add('active');
     el('dashHead').style.display='none';
@@ -2696,6 +2740,7 @@ document.addEventListener('DOMContentLoaded', function(){
   if(billSlug){
     // Splitter flow — load bill from Supabase by slug
     billerMode = false;
+    splitterSlug = billSlug;
 
     lockBillerUI();
     // Show loading
@@ -2717,6 +2762,21 @@ document.addEventListener('DOMContentLoaded', function(){
       }
       showSplitterOnboard();
       renderGuest();
+
+      // Restore any in-progress payment left behind by a GCash app round-trip
+      // (or an accidental tab close) so the splitter resumes where they were.
+      var prog = restoreSplitterProgress();
+      if(prog){
+        if(prog.name){ var gn = el('guestName'); if(gn) gn.value = prog.name; }
+        if(splitMode!=='equal' && prog.picked && prog.picked.length){
+          prog.picked.forEach(function(id){ picked[id] = true; });
+          renderGuestItems();
+        }
+        updateGuestCalc();
+        // If they had already advanced to the payment screen, take them back
+        // there directly (name is required for goToPayment to proceed).
+        if(prog.stage==='pay' && prog.name){ goToPayment(); }
+      }
     });
   } else {
     // Biller flow — load from Supabase
