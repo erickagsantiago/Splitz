@@ -337,7 +337,11 @@ select:focus{border-color:var(--accent)}
       <div class="slabel">GCash Payment Details</div>
       <div class="field">
         <label class="flabel">GCash Number</label>
-        <input type="text" id="gcashNum" placeholder="09XX XXX XXXX"/>
+        <div style="position:relative">
+          <input type="password" id="gcashNum" placeholder="09XX XXX XXXX" inputmode="numeric" autocomplete="off" style="padding-right:48px"/>
+          <button type="button" id="gcashNumToggle" onclick="toggleGcashNum()" aria-label="Show or hide GCash number"
+            style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--dim);font-size:18px;padding:0">👁️</button>
+        </div>
       </div>
       <div class="field">
         <label class="flabel">Account Name</label>
@@ -498,8 +502,8 @@ select:focus{border-color:var(--accent)}
 
   <div class="card mt16">
     <label class="flabel">Your Name</label>
-    <input type="text" id="guestName" placeholder="e.g. Julius" oninput="updateGuestCalc()"/>
-    <div id="savedNameHint" style="display:none;font-size:11px;color:var(--accent);margin-top:6px;font-weight:600">✓ Name remembered · <span onclick="clearSavedName()" style="color:var(--dim);cursor:pointer;text-decoration:underline">Clear</span></div>
+    <input type="text" id="guestName" oninput="updateGuestCalc();this.style.borderColor='';this.style.background='';"/>
+    <div id="savedNameHint" style="display:none"></div>
   </div>
 
   <!-- Who already paid -->
@@ -596,6 +600,13 @@ select:focus{border-color:var(--accent)}
   <div class="card card-yellow">
     <div style="font-size:12px;color:var(--yellow);line-height:1.6">⚠️ <span id="payWarnHost">the biller</span> will confirm once they receive your payment. You'll show as <strong>Pending</strong> until then.</div>
   </div>
+
+  <div class="card" style="background:var(--muted);border-style:dashed">
+    <div style="font-size:12px;color:var(--mid);line-height:1.7">
+      🛡️ <strong>Before you send:</strong> Make sure the account name in your GCash confirmation matches <strong id="verifyHost">the biller's name</strong> shown above. If it doesn't match or you're unsure, message the biller to verify first.
+      <div style="margin-top:8px;color:var(--dim);font-size:11px">Splitz only shares payment details — we don't process payments and aren't responsible for transfers sent to the wrong account.</div>
+    </div>
+  </div>
 </div>
 
 <!-- ══ S6: Dashboard ══ -->
@@ -618,6 +629,10 @@ select:focus{border-color:var(--accent)}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="slabel" style="margin-bottom:0">Your Bills <span id="sessionCount" style="color:var(--accent)"></span></div>
       <button class="btn btn-primary" style="width:auto;padding:6px 14px;font-size:12px" onclick="startNewReceipt()">+ New Receipt</button>
+    </div>
+    <div style="display:flex;gap:8px;align-items:flex-start;background:var(--muted);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px">
+      <div style="font-size:14px;flex-shrink:0">🔒</div>
+      <div style="font-size:11px;color:var(--mid);line-height:1.5">For your security, bills are kept here for <strong>7 days only</strong>, then automatically deleted.</div>
     </div>
     <div id="sessionTabs"></div>
   </div>
@@ -836,7 +851,7 @@ function saveBillToSupabase(cb){
       payment_method: 'GCash'
     });
   }
-  var slug = 'bill-'+Math.random().toString(36).slice(2,10);
+  var slug = genSlug();
   var body = {
     biller_id:  currentBillerId,
     label: sanitizeName((el('billLabel') && el('billLabel').value) || '') || 'Bill #'+(sessions.length+1),
@@ -844,7 +859,11 @@ function saveBillToSupabase(cb){
     num_people: numPeople,
     svc:        svcFromReceipt,
     items:      JSON.stringify(sanitizeItems(items)),
-    slug:       slug
+    slug:       slug,
+    // Bake the payment destination into the bill at creation. A DB trigger makes
+    // these immutable so nobody can redirect payments after the link is shared.
+    gcash_number: gcashNum,
+    gcash_name:   gcashName
   };
   supaPost('bills', body).then(function(rows){
     if(rows && rows[0]){
@@ -860,7 +879,9 @@ function saveBillToSupabase(cb){
         numPeople: numPeople,
         splitMode: splitMode,
         payments:  [],
-        slug:      slug
+        slug:      slug,
+        gcashNumber: gcashNum,
+        gcashName:   gcashName
       });
       activeSession = sessions.length-1;
       try{ localStorage.setItem('splitz_bill_ids', JSON.stringify(sessions.map(function(s){return s.supaId;}))); }catch(e){}
@@ -871,14 +892,15 @@ function saveBillToSupabase(cb){
 
 function updateBillInSupabase(){
   if(!currentBillId) return;
+  // Note: gcash_number/gcash_name are intentionally NOT updated here — they are
+  // immutable after the bill is created (enforced by a DB trigger) so payments
+  // can never be redirected once the link has been shared.
   supaPatch('bills?id=eq.'+currentBillId, {
-    label:        curSess() ? curSess().label : undefined,
-    split_mode:   splitMode,
-    num_people:   numPeople,
-    svc:          svcFromReceipt,
-    items:        JSON.stringify(items),
-    gcash_number: gcashNum,
-    gcash_name:   gcashName
+    label:      curSess() ? curSess().label : undefined,
+    split_mode: splitMode,
+    num_people: numPeople,
+    svc:        svcFromReceipt,
+    items:      JSON.stringify(sanitizeItems(items))
   });
 }
 
@@ -1120,6 +1142,16 @@ function fmt(n){ var num=Number(n); if(isNaN(num)) return '₱0.00'; return '₱
 function el(id){ return document.getElementById(id); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
+// ─── Bill links ───────────────────────────────────────────────────────────────
+var APP_BASE_URL = 'https://splitzbill.app';
+// Short 6-char base36 slug, e.g. splitzbill.app/?b=k3p9za
+function genSlug(){
+  var c = 'abcdefghijklmnopqrstuvwxyz0123456789', s = '';
+  for(var i=0;i<6;i++) s += c.charAt(Math.floor(Math.random()*36));
+  return s;
+}
+function billUrl(slug){ return APP_BASE_URL + '/?b=' + slug; }
+
 // ─── Input validation / sanitization ──────────────────────────────────────────
 // Validate untrusted values before they are persisted to Supabase.
 function sanitizeName(s){
@@ -1355,6 +1387,14 @@ function showGcashChip(num, name, method){
   // Never auto-show saved chip — biller must enter details each session
 }
 
+function toggleGcashNum(){
+  var inp = el('gcashNum'), btn = el('gcashNumToggle');
+  if(!inp) return;
+  var hidden = inp.type === 'password';
+  inp.type = hidden ? 'text' : 'password';
+  if(btn) btn.textContent = hidden ? '🙈' : '👁️';
+}
+
 function editGcash(){
   el('gcashSavedChip').style.display = 'none';
   el('gcashFullForm').style.display  = 'block';
@@ -1576,14 +1616,11 @@ function showDeleteConfirm(msg, onConfirm){
 
 // ─── Guest name auto-save ─────────────────────────────────────────────────────
 function loadSavedGuestName(){
-  try{
-    var n = localStorage.getItem('splitsies_guestname');
-    if(n){ el('guestName').value=n; el('savedNameHint').style.display='block'; updateGuestCalc(); }
-  }catch(e){}
+  // Name is intentionally not remembered — splitter always types fresh.
 }
 
 function saveGuestName(name){
-  try{ localStorage.setItem('splitsies_guestname', name); }catch(e){}
+  // Saving disabled — name is cleared on every visit.
 }
 
 function clearSavedName(){
@@ -1846,11 +1883,12 @@ function startNewReceipt(){
   el('gcashSavedChip').style.display='none';
   el('gcashFullForm').style.display='block';
   currentBillId = null;
+  // Detach from any existing session so edits to this fresh receipt don't
+  // overwrite a previously-saved bill's items. A new session is created when
+  // the link is generated.
+  activeSession = null;
   // Do NOT clear gcashNum/gcashName variables or Supabase biller record
   // Biller details must stay so splitters can still pay via old links
-
-
-
 
   goTo(0);
 }
@@ -1878,9 +1916,7 @@ function generateAndShow(){
   saveBillToSupabase(function(slug){
     if(!slug){ showToast('Could not save — check your connection'); return; }
 
-    // Use real deployed URL
-    var appUrl = window.location.origin + window.location.pathname;
-    var fullUrl = appUrl + '?bill=' + slug;
+    var fullUrl = billUrl(slug);
 
     el('lnkUrl').textContent = fullUrl;
     var h = el('lnkEqualHint');
@@ -1912,12 +1948,11 @@ function renderLink(){
   if(!lnkEl) return; // element only exists in s0 summary section
   var sess = sessions[activeSession];
   if(sess && !sess.slug){
-    sess.slug = 'bill-'+Math.random().toString(36).slice(2,10);
+    sess.slug = genSlug();
     persistSessions();
   }
   var slug = (sess && sess.slug) || 'pay-xxxx';
-  var appUrlR = window.location.origin + window.location.pathname;
-  lnkEl.textContent = appUrlR + '?bill=' + slug;
+  lnkEl.textContent = billUrl(slug);
   var h = el('lnkEqualHint');
   if(h){
     h.style.display = splitMode==='equal'?'block':'none';
@@ -1992,7 +2027,7 @@ function renderGuest(){
     el('alreadyPaidSection').style.display='block';
     el('alreadyPaidList').innerHTML = paidList.map(function(p){
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;last-child:margin-bottom:0">'
-        +'<div style="width:24px;height:24px;border-radius:50%;background:var(--abg);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--accent)">'+p.name[0].toUpperCase()+'</div>'
+        +'<div style="width:24px;height:24px;border-radius:50%;background:var(--abg);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--accent)">'+esc((p.name||'?').charAt(0).toUpperCase())+'</div>'
         +'<div style="font-size:13px;font-weight:600;color:var(--text)">'+esc(p.name)+'</div>'
         +'<span style="margin-left:auto;font-size:11px;color:var(--accent);font-weight:700">✓ Paid</span>'
         +'</div>';
@@ -2034,25 +2069,38 @@ function getClaimedItemIds(){
 
 function renderGuestItems(){
   var claimed  = getClaimedItemIds();
+
+  // Prune any selections that have since been claimed by another splitter so the
+  // running total never includes an item the user can no longer pay for.
+  var prunedSomething = false;
+  Object.keys(picked).forEach(function(id){
+    if(picked[id] && claimed[id]){ picked[id] = false; prunedSomething = true; }
+  });
+
   var available = items.filter(function(it){ return !claimed[it.id]; });
 
   if(available.length === 0){
     el('guestItems').innerHTML =
       '<div style="text-align:center;padding:20px 0;color:var(--dim);font-size:13px">🎉 All items have been claimed!</div>';
+    if(prunedSomething) showToast('An item you picked was just claimed by someone else','warn');
     updateGuestCalc();
     return;
   }
 
+  // Re-apply the user's current selection state so a background refresh never
+  // silently clears what they already tapped.
   el('guestItems').innerHTML = available.map(function(it,idx){
-    return '<div class="item-row" id="ir'+it.id+'" onclick="toggleItem('+it.id+')">'
+    var on = !!picked[it.id];
+    return '<div class="item-row'+(on?' on':'')+'" id="ir'+it.id+'" onclick="toggleItem('+it.id+')">'
       +'<div style="display:flex;gap:12px;align-items:center">'
-      +'<div class="ichk" id="ic'+it.id+'"></div>'
-      +'<div style="font-size:14px;color:var(--mid)" id="in'+it.id+'">'+esc(it.name)+'</div>'
+      +'<div class="ichk'+(on?' on':'')+'" id="ic'+it.id+'">'+(on?'✓':'')+'</div>'
+      +'<div style="font-size:14px;color:'+(on?'var(--text)':'var(--mid)')+'" id="in'+it.id+'">'+esc(it.name)+'</div>'
       +'</div>'
-      +'<div style="font-size:14px;font-weight:700;color:var(--dim)" id="ip'+it.id+'">'+fmt(it.price)+'</div>'
+      +'<div style="font-size:14px;font-weight:700;color:'+(on?'var(--accent)':'var(--dim)')+'" id="ip'+it.id+'">'+fmt(it.price)+'</div>'
       +'</div>'
       +(idx<available.length-1?'<div style="height:1px;background:var(--border);margin:0 -8px"></div>':'');
   }).join('');
+  if(prunedSomething) showToast('An item you picked was just claimed by someone else','warn');
   updateGuestCalc();
 }
 
@@ -2108,7 +2156,15 @@ function goToPayment(){
     var gSub   = items.reduce(function(s,it){return s+(picked[it.id]?it.price:0);},0);
     gTot = gSub + (allSub>0 ? Math.round((gSub/allSub)*getSvc()) : 0);
   }
-  if(!name){ showToast("Please enter your name before paying"); el("guestName").focus(); return; }
+  if(!name){
+    var inp = el('guestName');
+    inp.style.borderColor = '#E03B3B';
+    inp.style.background  = 'rgba(224,59,59,0.06)';
+    inp.focus();
+    inp.scrollIntoView({ behavior:'smooth', block:'center' });
+    showToast('Please enter your name first');
+    return;
+  }
   if(!isEq && !Object.keys(picked).some(function(k){return picked[k];})){showToast("Please select at least one item"); return;}
 
   // Biller must have at least a GCash number for splitters to pay
@@ -2125,6 +2181,7 @@ function goToPayment(){
   el('payGcashName').textContent= gcashName || '—';
   el('payGcashNum').textContent = gcashNum  || '—';
   el('payWarnHost').textContent = 'the biller';
+  el('verifyHost').textContent  = gcashName ? '“'+gcashName+'”' : "the biller's name";
 
   // Show QR if uploaded
   if(qrDataUrl){
@@ -2215,6 +2272,10 @@ function renderDash(){
     el('sessionTabsWrap').style.display='none';
     el('sessionDetail').style.display='none';
     return;
+  }
+  // If detached (e.g. after starting a new receipt), default to the latest bill.
+  if(activeSession === null || !sessions[activeSession]){
+    activeSession = sessions.length - 1;
   }
 
   el('noSessionMsg').style.display='none';
@@ -2333,11 +2394,10 @@ function renderDash(){
 
   // Always show payment link — generate one if not yet saved
   if(!sess.slug){
-    sess.slug = 'bill-'+Math.random().toString(36).slice(2,10);
+    sess.slug = genSlug();
     persistSessions();
   }
-  var dashAppUrl = window.location.origin + window.location.pathname;
-  el('dashLinkUrl').textContent = dashAppUrl + '?bill=' + sess.slug;
+  el('dashLinkUrl').textContent = billUrl(sess.slug);
   el('dashLinkCard').style.display = 'block';
 
   // Fully paid banner — show only when owed = 0, forConfirm = 0, and there are confirmed payments
@@ -2412,7 +2472,7 @@ function renderDash(){
         var amt   = calcSessAmt(p);
         var pItms = p.items.map(function(id){return sessItems.find(function(i){return i.id===id;});}).filter(Boolean);
         var prev  = p.equalSplit ? 'Equal share (1 of '+sess.numPeople+' people)'
-                  : pItms.slice(0,2).map(function(i){return i.name;}).join(', ')+(pItms.length>2?' +'+(pItms.length-2):'');
+                  : esc(pItms.slice(0,2).map(function(i){return i.name;}).join(', '))+(pItms.length>2?' +'+(pItms.length-2):'');
         var last  = idx===payments.length-1;
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0'+(last?'':';border-bottom:1px solid var(--border)')+'">'
           +'<div style="display:flex;gap:12px;align-items:center">'
@@ -2560,7 +2620,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Check if splitter is opening a bill link (?bill=slug)
   var urlParams = new URLSearchParams(window.location.search);
-  var billSlug  = urlParams.get('bill');
+  var billSlug  = urlParams.get('b') || urlParams.get('bill');
 
   if(billSlug){
     // Splitter flow — load bill from Supabase by slug
@@ -2575,6 +2635,13 @@ document.addEventListener('DOMContentLoaded', function(){
       if(!bill){
         el('s4Title').textContent = 'Bill Not Found';
         el('s4Sub').textContent   = 'This link may have expired or is invalid';
+        // Hide the interactive parts — nothing to pay for.
+        el('itemPickSection').style.display = 'none';
+        el('equalPaySection').style.display = 'none';
+        el('alreadyPaidSection').style.display = 'none';
+        var pb = el('payBtn'); if(pb) pb.style.display = 'none';
+        var nameCard = el('guestName') && el('guestName').closest('.card');
+        if(nameCard) nameCard.style.display = 'none';
         return;
       }
       showSplitterOnboard();
