@@ -2121,7 +2121,8 @@ function updateGuestCalc(){
   var isEq = splitMode==='equal';
   if(isEq){
     btn.textContent = name ? 'Pay '+fmt(getPerPerson())+' to the biller →' : 'Pay to the biller →';
-    btn.disabled = !name;
+    // Keep enabled so tapping without a name triggers the warning in goToPayment()
+    btn.disabled = false;
     return;
   }
   // Use full subtotal for proportional SC (so proportions stay correct)
