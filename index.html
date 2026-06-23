@@ -563,7 +563,7 @@ select:focus{border-color:var(--accent)}
     </div>
   </div>
 
-  <button class="btn btn-primary" id="payBtn" disabled onclick="goToPayment()">Pay to the biller →</button>
+  <button class="btn btn-primary" id="payBtn" onclick="goToPayment()">Pay to the biller →</button>
 </div>
 
 <!-- ══ S5: Payment ══ -->
@@ -2211,7 +2211,8 @@ function updateGuestCalc(){
     card.style.display='none';
     btn.textContent = 'Pay to the biller →';
   }
-  btn.disabled = !(name && hasItems);
+  // Keep enabled so tapping without a name (or items) triggers the warning in goToPayment()
+  btn.disabled = false;
 }
 
 // ─── Payment screen ───────────────────────────────────────────────────────────
