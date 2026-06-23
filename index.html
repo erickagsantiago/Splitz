@@ -844,7 +844,11 @@ function saveBillToSupabase(cb){
     num_people: numPeople,
     svc:        svcFromReceipt,
     items:      JSON.stringify(sanitizeItems(items)),
-    slug:       slug
+    slug:       slug,
+    // Bake the payment destination into the bill at creation. A DB trigger makes
+    // these immutable so nobody can redirect payments after the link is shared.
+    gcash_number: gcashNum,
+    gcash_name:   gcashName
   };
   supaPost('bills', body).then(function(rows){
     if(rows && rows[0]){
@@ -860,7 +864,9 @@ function saveBillToSupabase(cb){
         numPeople: numPeople,
         splitMode: splitMode,
         payments:  [],
-        slug:      slug
+        slug:      slug,
+        gcashNumber: gcashNum,
+        gcashName:   gcashName
       });
       activeSession = sessions.length-1;
       try{ localStorage.setItem('splitz_bill_ids', JSON.stringify(sessions.map(function(s){return s.supaId;}))); }catch(e){}
@@ -871,14 +877,15 @@ function saveBillToSupabase(cb){
 
 function updateBillInSupabase(){
   if(!currentBillId) return;
+  // Note: gcash_number/gcash_name are intentionally NOT updated here — they are
+  // immutable after the bill is created (enforced by a DB trigger) so payments
+  // can never be redirected once the link has been shared.
   supaPatch('bills?id=eq.'+currentBillId, {
-    label:        curSess() ? curSess().label : undefined,
-    split_mode:   splitMode,
-    num_people:   numPeople,
-    svc:          svcFromReceipt,
-    items:        JSON.stringify(items),
-    gcash_number: gcashNum,
-    gcash_name:   gcashName
+    label:      curSess() ? curSess().label : undefined,
+    split_mode: splitMode,
+    num_people: numPeople,
+    svc:        svcFromReceipt,
+    items:      JSON.stringify(sanitizeItems(items))
   });
 }
 
@@ -1843,11 +1850,12 @@ function startNewReceipt(){
   el('gcashSavedChip').style.display='none';
   el('gcashFullForm').style.display='block';
   currentBillId = null;
+  // Detach from any existing session so edits to this fresh receipt don't
+  // overwrite a previously-saved bill's items. A new session is created when
+  // the link is generated.
+  activeSession = null;
   // Do NOT clear gcashNum/gcashName variables or Supabase biller record
   // Biller details must stay so splitters can still pay via old links
-
-
-
 
   goTo(0);
 }
@@ -1989,7 +1997,7 @@ function renderGuest(){
     el('alreadyPaidSection').style.display='block';
     el('alreadyPaidList').innerHTML = paidList.map(function(p){
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;last-child:margin-bottom:0">'
-        +'<div style="width:24px;height:24px;border-radius:50%;background:var(--abg);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--accent)">'+p.name[0].toUpperCase()+'</div>'
+        +'<div style="width:24px;height:24px;border-radius:50%;background:var(--abg);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--accent)">'+esc((p.name||'?').charAt(0).toUpperCase())+'</div>'
         +'<div style="font-size:13px;font-weight:600;color:var(--text)">'+esc(p.name)+'</div>'
         +'<span style="margin-left:auto;font-size:11px;color:var(--accent);font-weight:700">✓ Paid</span>'
         +'</div>';
@@ -2031,25 +2039,38 @@ function getClaimedItemIds(){
 
 function renderGuestItems(){
   var claimed  = getClaimedItemIds();
+
+  // Prune any selections that have since been claimed by another splitter so the
+  // running total never includes an item the user can no longer pay for.
+  var prunedSomething = false;
+  Object.keys(picked).forEach(function(id){
+    if(picked[id] && claimed[id]){ picked[id] = false; prunedSomething = true; }
+  });
+
   var available = items.filter(function(it){ return !claimed[it.id]; });
 
   if(available.length === 0){
     el('guestItems').innerHTML =
       '<div style="text-align:center;padding:20px 0;color:var(--dim);font-size:13px">🎉 All items have been claimed!</div>';
+    if(prunedSomething) showToast('An item you picked was just claimed by someone else','warn');
     updateGuestCalc();
     return;
   }
 
+  // Re-apply the user's current selection state so a background refresh never
+  // silently clears what they already tapped.
   el('guestItems').innerHTML = available.map(function(it,idx){
-    return '<div class="item-row" id="ir'+it.id+'" onclick="toggleItem('+it.id+')">'
+    var on = !!picked[it.id];
+    return '<div class="item-row'+(on?' on':'')+'" id="ir'+it.id+'" onclick="toggleItem('+it.id+')">'
       +'<div style="display:flex;gap:12px;align-items:center">'
-      +'<div class="ichk" id="ic'+it.id+'"></div>'
-      +'<div style="font-size:14px;color:var(--mid)" id="in'+it.id+'">'+esc(it.name)+'</div>'
+      +'<div class="ichk'+(on?' on':'')+'" id="ic'+it.id+'">'+(on?'✓':'')+'</div>'
+      +'<div style="font-size:14px;color:'+(on?'var(--text)':'var(--mid)')+'" id="in'+it.id+'">'+esc(it.name)+'</div>'
       +'</div>'
-      +'<div style="font-size:14px;font-weight:700;color:var(--dim)" id="ip'+it.id+'">'+fmt(it.price)+'</div>'
+      +'<div style="font-size:14px;font-weight:700;color:'+(on?'var(--accent)':'var(--dim)')+'" id="ip'+it.id+'">'+fmt(it.price)+'</div>'
       +'</div>'
       +(idx<available.length-1?'<div style="height:1px;background:var(--border);margin:0 -8px"></div>':'');
   }).join('');
+  if(prunedSomething) showToast('An item you picked was just claimed by someone else','warn');
   updateGuestCalc();
 }
 
@@ -2220,6 +2241,10 @@ function renderDash(){
     el('sessionTabsWrap').style.display='none';
     el('sessionDetail').style.display='none';
     return;
+  }
+  // If detached (e.g. after starting a new receipt), default to the latest bill.
+  if(activeSession === null || !sessions[activeSession]){
+    activeSession = sessions.length - 1;
   }
 
   el('noSessionMsg').style.display='none';
@@ -2417,7 +2442,7 @@ function renderDash(){
         var amt   = calcSessAmt(p);
         var pItms = p.items.map(function(id){return sessItems.find(function(i){return i.id===id;});}).filter(Boolean);
         var prev  = p.equalSplit ? 'Equal share (1 of '+sess.numPeople+' people)'
-                  : pItms.slice(0,2).map(function(i){return i.name;}).join(', ')+(pItms.length>2?' +'+(pItms.length-2):'');
+                  : esc(pItms.slice(0,2).map(function(i){return i.name;}).join(', '))+(pItms.length>2?' +'+(pItms.length-2):'');
         var last  = idx===payments.length-1;
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0'+(last?'':';border-bottom:1px solid var(--border)')+'">'
           +'<div style="display:flex;gap:12px;align-items:center">'
@@ -2580,6 +2605,13 @@ document.addEventListener('DOMContentLoaded', function(){
       if(!bill){
         el('s4Title').textContent = 'Bill Not Found';
         el('s4Sub').textContent   = 'This link may have expired or is invalid';
+        // Hide the interactive parts — nothing to pay for.
+        el('itemPickSection').style.display = 'none';
+        el('equalPaySection').style.display = 'none';
+        el('alreadyPaidSection').style.display = 'none';
+        var pb = el('payBtn'); if(pb) pb.style.display = 'none';
+        var nameCard = el('guestName') && el('guestName').closest('.card');
+        if(nameCard) nameCard.style.display = 'none';
         return;
       }
       showSplitterOnboard();
