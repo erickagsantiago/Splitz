@@ -200,41 +200,6 @@ select:focus{border-color:var(--accent)}
 <script defer src="/_vercel/insights/script.js"></script>
 <body>
 
-<!-- ══ INVITE GATE (Biller only) ══ -->
-<div id="inviteGate" class="invite-gate" style="display:none">
-  <div class="invite-box">
-
-    <!-- Logo -->
-    <div style="margin:0 auto 28px;text-align:center">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="56" height="56" style="display:block;margin:0 auto 10px">
-        <rect x="0" y="0" width="40" height="40" rx="11" fill="rgba(255,255,255,0.18)"/>
-        <path d="M29 10 Q29 6 22 6 Q15 6 15 11 Q15 17 22 19 L28 21" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
-        <line x1="26" y1="22" x2="22" y2="24" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2 3" opacity="0.55"/>
-        <path d="M20 26 L26 27 Q33 29 33 34 Q33 39 26 39 Q19 39 19 34" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
-      </svg>
-      <div style="font-size:26px;font-weight:900;color:#fff;letter-spacing:-0.8px">Splitz</div>
-    </div>
-
-    <div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;margin-bottom:8px">Biller Access</div>
-    <div style="font-size:14px;color:rgba(255,255,255,0.75);margin-bottom:28px;line-height:1.6">This area is for billers only.<br/>Enter your invite code to continue.</div>
-
-    <!-- Code input -->
-    <input type="text" id="inviteInput" class="invite-input" placeholder="Enter invite code" maxlength="20"
-      oninput="this.value=this.value.toUpperCase()"
-      onkeydown="if(event.key==='Enter') checkInviteCode()"/>
-
-    <div id="inviteError" style="display:none;font-size:12px;color:#FFD6D6;margin-top:8px;font-weight:600">
-      ❌ Invalid code — please try again
-    </div>
-
-    <button id="inviteSubmitBtn" onclick="checkInviteCode()" style="width:100%;margin-top:16px;padding:15px;border-radius:12px;border:none;background:#fff;color:#00B37A;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
-      Enter →
-    </button>
-
-
-
-  </div>
-</div>
 
 <!-- HEADER -->
 <div class="hdr">
@@ -769,8 +734,8 @@ select:focus{border-color:var(--accent)}
 
 <!-- NAV -->
 <div class="nav" id="navBar">
-  <button class="nbtn" onclick="goToBiller(0)"><div class="nic active" id="n0">⊕</div><div class="nlbl active" id="nl0">New</div></button>
-  <button class="nbtn" onclick="billerMode?openDash():showInviteGate()"><div class="nic" id="n6">▦</div><div class="nlbl" id="nl6">Dashboard</div></button>
+  <button class="nbtn" onclick="goTo(0)"><div class="nic active" id="n0">⊕</div><div class="nlbl active" id="nl0">New</div></button>
+  <button class="nbtn" onclick="openDash()"><div class="nic" id="n6">▦</div><div class="nlbl" id="nl6">Dashboard</div></button>
 </div>
 
 <script>
@@ -1430,77 +1395,10 @@ function showSplitterOnboard(){
 }
 
 
-// ─── Invite gate ──────────────────────────────────────────────────────────────
-// The invite code is validated server-side (/api/invite) so it is never exposed
-// in the client bundle. Set INVITE_CODE in the Vercel environment variables.
-var billerMode  = false;       // true = biller (passed code), false = splitter only
-
-function initInviteGate(){
-  // Check if already unlocked this session
-  try{
-    if(sessionStorage.getItem('splitsies_biller')==='1'){
-      billerMode = true;
-      el('inviteGate').style.display = 'none';
-      showBillerUI();
-      return;
-    }
-  }catch(e){}
-
-  // Show gate — hide nav and main content
-  el('inviteGate').style.display = 'flex';
-  lockBillerUI();
-}
-
-function rejectInviteCode(){
-  var input = el('inviteInput');
-  var err   = el('inviteError');
-  if(input) input.className = 'invite-input error';
-  if(err) err.style.display = 'block';
-  setTimeout(function(){ if(input){ input.className='invite-input'; input.value=''; } }, 800);
-}
-
-function checkInviteCode(){
-  var val = (el('inviteInput').value||'').trim().toUpperCase();
-  if(!val){ rejectInviteCode(); return; }
-
-  var btn = el('inviteSubmitBtn');
-  if(btn) btn.disabled = true;
-
-  // Validate against the serverless endpoint — the code never lives client-side.
-  fetchRetry('/api/invite', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ code: val })
-  })
-  .then(function(r){ return r.json(); })
-  .then(function(data){
-    if(btn) btn.disabled = false;
-    if(data && data.ok){
-      try{ sessionStorage.setItem('splitsies_biller','1'); }catch(e){}
-      billerMode = true;
-      var gate = el('inviteGate');
-      gate.style.opacity='0';
-      gate.style.transition='opacity 0.3s';
-      setTimeout(function(){ gate.style.display='none'; gate.style.opacity=''; }, 300);
-      showBillerUI();
-    } else {
-      rejectInviteCode();
-    }
-  })
-  .catch(function(e){
-    if(btn) btn.disabled = false;
-    logErr('invite check', e);
-    showToast('Could not verify code — check your connection');
-  });
-}
-
-function enterAsSplitter(){
-  billerMode = false;
-  el('inviteGate').style.display = 'none';
-  lockBillerUI();
-  showSplitterOnboard();
-  goTo(4);
-}
+// ─── Biller mode ──────────────────────────────────────────────────────────────
+// Splitz is now public — everyone who visits directly is a biller.
+// billerMode is set to false only for splitters arriving via a ?bill= link.
+var billerMode = true;
 
 function showBillerUI(){
   el('navBar').style.display = 'flex';
@@ -1509,25 +1407,7 @@ function showBillerUI(){
 }
 
 function lockBillerUI(){
-  // Hide biller nav items — splitters shouldn't see New or Dashboard
   el('navBar').style.display = 'none';
-}
-
-// Intercept nav to protect biller screens
-function goToBiller(n){
-  if(!billerMode && (n===0 || n===6)){
-    // Redirect to invite gate instead
-    el('inviteGate').style.display = 'flex';
-    el('inviteInput').focus();
-    return;
-  }
-  goTo(n);
-}
-
-
-function showInviteGate(){
-  el('inviteGate').style.display = 'flex';
-  setTimeout(function(){ var i=el('inviteInput'); if(i) i.focus(); },200);
 }
 
 function showToast(msg, type){
@@ -2661,7 +2541,7 @@ document.addEventListener('DOMContentLoaded', function(){
   if(billSlug){
     // Splitter flow — load bill from Supabase by slug
     billerMode = false;
-    el('inviteGate').style.display = 'none';
+
     lockBillerUI();
     // Show loading
     goTo(4);
@@ -2685,14 +2565,14 @@ document.addEventListener('DOMContentLoaded', function(){
           if(sessionStorage.getItem('splitsies_biller')==='1' &&
              sessionStorage.getItem('splitz_pin_unlocked')==='1'){
             billerMode = true;
-            el('inviteGate').style.display = 'none';
+        
             el('navBar').style.display = 'flex';
             pinUnlocked = true;
             goTo(6);
             return;
           }
         }catch(e){}
-        initInviteGate();
+        showBillerUI();
       });
     });
   }
