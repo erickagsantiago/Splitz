@@ -786,24 +786,50 @@ function fetchRetry(url, opts, tries){
 }
 
 // ─── Supabase helpers ─────────────────────────────────────────────────────────
+// Writes use Prefer:return=minimal so they never need SELECT on the row. Row IDs
+// are generated client-side (uuid()) so we don't depend on the server echoing the
+// inserted row back. This lets us lock down direct SELECT on bills/billers — the
+// public anon key can no longer bulk-dump everyone's GCash details. Reads of
+// bills go through scoped RPCs (supaRpc); payments stay direct (needed for
+// realtime).
+function uuid(){
+  try{ if(window.crypto && crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+    var r;
+    try{ r = crypto.getRandomValues(new Uint8Array(1))[0] % 16; }catch(e){ r = Math.floor(Math.random()*16); }
+    var v = c === 'x' ? r : (r & 0x3 | 0x8);
+    return v.toString(16);
+  });
+}
+
 function supa(path, method, body){
   return fetchRetry(SUPA_URL + '/rest/v1/' + path, {
     method: method || 'GET',
-    headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=representation' }),
+    headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=minimal' }),
     body: body ? JSON.stringify(body) : undefined
-  }).then(function(r){ return r.json(); })
+  }).then(function(r){ return r.text(); })
+    .then(function(t){ return t ? JSON.parse(t) : null; })
     .catch(function(e){ logErr('Supabase ' + (method||'GET') + ' ' + path, e); return null; });
 }
 
 function supaGet(path){ return supa(path, 'GET'); }
 function supaPost(path, body){ return supa(path, 'POST', body); }
+function supaRpc(fn, args){
+  return fetchRetry(SUPA_URL + '/rest/v1/rpc/' + fn, {
+    method: 'POST',
+    headers: supaHeaders,
+    body: JSON.stringify(args || {})
+  }).then(function(r){ return r.text(); })
+    .then(function(t){ return t ? JSON.parse(t) : null; })
+    .catch(function(e){ logErr('Supabase RPC ' + fn, e); return null; });
+}
 function supaPatch(path, body){
   return fetchRetry(SUPA_URL + '/rest/v1/' + path, {
     method: 'PATCH',
-    headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=representation' }),
+    headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=minimal' }),
     body: JSON.stringify(body)
-  }).then(function(r){ return r.json(); })
-    .catch(function(e){ logErr('Supabase PATCH ' + path, e); return null; });
+  }).then(function(r){ return r.ok; })
+    .catch(function(e){ logErr('Supabase PATCH ' + path, e); return false; });
 }
 function supaDelete(path){
   return fetchRetry(SUPA_URL + '/rest/v1/' + path, {
@@ -819,8 +845,10 @@ function saveBillerToSupabase(cb){
   if(currentBillerId){
     supaPatch('billers?id=eq.'+currentBillerId, body).then(function(){ if(cb) cb(); });
   } else {
-    supaPost('billers', body).then(function(rows){
-      if(rows && rows[0]) currentBillerId = rows[0].id;
+    // Generate the id client-side so we don't need the server to echo the row back.
+    currentBillerId = uuid();
+    body.id = currentBillerId;
+    supaPost('billers', body).then(function(){
       try{ localStorage.setItem('splitz_biller_id', currentBillerId); }catch(e){}
       if(cb) cb();
     });
@@ -831,13 +859,11 @@ function loadBillerFromSupabase(cb){
   var saved = null;
   try{ saved = localStorage.getItem('splitz_biller_id'); }catch(e){}
   if(!saved){ if(cb) cb(); return; }
+  // We keep currentBillerId so existing bills/links still work, but we do NOT
+  // pre-fill the form or memory (biller enters fresh details each session). No
+  // server read needed — direct SELECT on billers is locked down for privacy.
   currentBillerId = saved;
-  supaGet('billers?id=eq.'+saved+'&select=*').then(function(rows){
-    // Note: we keep currentBillerId so existing bills/links still work,
-    // but we do NOT pre-fill the form or memory. The biller enters
-    // fresh payment details each session for privacy.
-    if(cb) cb();
-  });
+  if(cb) cb();
 }
 
 // ─── Bill (session) ───────────────────────────────────────────────────────────
@@ -852,7 +878,9 @@ function saveBillToSupabase(cb){
     });
   }
   var slug = genSlug();
+  var newId = uuid();
   var body = {
+    id:         newId,
     biller_id:  currentBillerId,
     label: sanitizeName((el('billLabel') && el('billLabel').value) || '') || 'Bill #'+(sessions.length+1),
     split_mode: splitMode,
@@ -865,28 +893,26 @@ function saveBillToSupabase(cb){
     gcash_number: gcashNum,
     gcash_name:   gcashName
   };
-  supaPost('bills', body).then(function(rows){
-    if(rows && rows[0]){
-      currentBillId = rows[0].id;
-      // Add to local sessions array too
-      sessions.push({
-        id:        currentBillId,
-        supaId:    currentBillId,
-        label:     body.label,
-        date:      new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric'})+'  · '+new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),
-        items:     items.slice(),
-        svc:       svcFromReceipt,
-        numPeople: numPeople,
-        splitMode: splitMode,
-        payments:  [],
-        slug:      slug,
-        gcashNumber: gcashNum,
-        gcashName:   gcashName
-      });
-      activeSession = sessions.length-1;
-      try{ localStorage.setItem('splitz_bill_ids', JSON.stringify(sessions.map(function(s){return s.supaId;}))); }catch(e){}
-    }
-    if(cb) cb(rows && rows[0] ? rows[0].slug : null);
+  supaPost('bills', body).then(function(){
+    currentBillId = newId;
+    // Add to local sessions array too
+    sessions.push({
+      id:        currentBillId,
+      supaId:    currentBillId,
+      label:     body.label,
+      date:      new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric'})+'  · '+new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),
+      items:     items.slice(),
+      svc:       svcFromReceipt,
+      numPeople: numPeople,
+      splitMode: splitMode,
+      payments:  [],
+      slug:      slug,
+      gcashNumber: gcashNum,
+      gcashName:   gcashName
+    });
+    activeSession = sessions.length-1;
+    try{ localStorage.setItem('splitz_bill_ids', JSON.stringify(sessions.map(function(s){return s.supaId;}))); }catch(e){}
+    if(cb) cb(slug);
   });
 }
 
@@ -908,7 +934,7 @@ function loadBillsFromSupabase(cb){
   var savedIds = null;
   try{ savedIds = JSON.parse(localStorage.getItem('splitz_bill_ids')||'null'); }catch(e){}
   if(!savedIds || !savedIds.length){ if(cb) cb(); return; }
-  supaGet('bills?id=in.('+savedIds.join(',')+')'+'&order=created_at.asc&select=*').then(function(bills){
+  supaRpc('get_bills_by_ids', { p_ids: savedIds }).then(function(bills){
     if(!bills || !bills.length){ if(cb) cb(); return; }
     var promises = bills.map(function(bill){
       return supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
@@ -949,38 +975,36 @@ function loadBillsFromSupabase(cb){
 
 // ─── Load bill by slug (splitter opening link) ────────────────────────────────
 function loadBillBySlug(slug, cb){
-  supaGet('bills?slug=eq.'+slug+'&select=*').then(function(bills){
+  // Scoped RPC returns the bill with GCash already coalesced from the biller
+  // record, so we no longer read the billers table directly.
+  supaRpc('get_bill_by_slug', { p_slug: slug }).then(function(bills){
     if(!bills || !bills.length){ if(cb) cb(null); return; }
     var bill = bills[0];
-    supaGet('billers?id=eq.'+bill.biller_id+'&select=*').then(function(billers){
-      var biller = billers && billers[0] ? billers[0] : {};
-      supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
-        var parsedItems = [];
-        try{ parsedItems = typeof bill.items === 'string' ? JSON.parse(bill.items) : (bill.items||[]); }catch(e){ logErr('parse bill items '+bill.id, e); }
-        items = parsedItems;
-        svcFromReceipt = bill.svc;
-        numPeople = bill.num_people;
-        splitMode = bill.split_mode;
-        // Use bill-level gcash if available, fall back to biller record
-        gcashNum = bill.gcash_number || biller.account_number || '';
-        gcashName = bill.gcash_name || biller.account_name || '';
-        paymentMethod = 'GCash';
-        qrDataUrl = '';
-        currentBillId = bill.id;
-        // Build local session
-        sessions = [{
-          id: bill.id, supaId: bill.id,
-          label: bill.label, date: bill.created_at,
-          items: parsedItems, svc: bill.svc,
-          numPeople: bill.num_people, splitMode: bill.split_mode,
-          slug: bill.slug,
-          payments: (pmts||[]).map(function(p){
-            return { id:p.id, name:p.splitter_name, items:p.item_ids||[], equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed };
-          })
-        }];
-        activeSession = 0;
-        if(cb) cb(bill);
-      });
+    supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
+      var parsedItems = [];
+      try{ parsedItems = typeof bill.items === 'string' ? JSON.parse(bill.items) : (bill.items||[]); }catch(e){ logErr('parse bill items '+bill.id, e); }
+      items = parsedItems;
+      svcFromReceipt = bill.svc;
+      numPeople = bill.num_people;
+      splitMode = bill.split_mode;
+      gcashNum = bill.gcash_number || '';
+      gcashName = bill.gcash_name || '';
+      paymentMethod = 'GCash';
+      qrDataUrl = '';
+      currentBillId = bill.id;
+      // Build local session
+      sessions = [{
+        id: bill.id, supaId: bill.id,
+        label: bill.label, date: bill.created_at,
+        items: parsedItems, svc: bill.svc,
+        numPeople: bill.num_people, splitMode: bill.split_mode,
+        slug: bill.slug,
+        payments: (pmts||[]).map(function(p){
+          return { id:p.id, name:p.splitter_name, items:p.item_ids||[], equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed };
+        })
+      }];
+      activeSession = 0;
+      if(cb) cb(bill);
     });
   });
 }
@@ -990,17 +1014,17 @@ function savePaymentToSupabase(payment, cb){
   if(!currentBillId){ if(cb) cb(); return; }
   var safeName = sanitizeName(payment.name);
   if(!safeName){ showToast('Please enter a valid name'); if(cb) cb(); return; }
+  var newId = uuid();
   supaPost('payments', {
+    id:            newId,
     bill_id:       currentBillId,
     splitter_name: safeName,
     item_ids:      Array.isArray(payment.items) ? payment.items.map(Number).filter(function(n){return !isNaN(n);}) : [],
     equal_split:   payment.equalSplit||false,
     amount:        sanitizeAmount(payment.amount),
     confirmed:     false
-  }).then(function(rows){
-    if(rows && rows[0] && curSess()){
-      curSess().payments.push(Object.assign({}, payment, { id: rows[0].id }));
-    }
+  }).then(function(){
+    if(curSess()) curSess().payments.push(Object.assign({}, payment, { id: newId }));
     if(cb) cb();
   });
 }
