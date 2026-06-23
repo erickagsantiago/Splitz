@@ -499,7 +499,7 @@ select:focus{border-color:var(--accent)}
   <div class="card mt16">
     <label class="flabel">Your Name</label>
     <input type="text" id="guestName" placeholder="e.g. Julius" oninput="updateGuestCalc()"/>
-    <div id="savedNameHint" style="display:none;font-size:11px;color:var(--accent);margin-top:6px;font-weight:600">✓ Name remembered · <span onclick="clearSavedName()" style="color:var(--dim);cursor:pointer;text-decoration:underline">Clear</span></div>
+    <div id="savedNameHint" style="display:none"></div>
   </div>
 
   <!-- Who already paid -->
@@ -1576,14 +1576,11 @@ function showDeleteConfirm(msg, onConfirm){
 
 // ─── Guest name auto-save ─────────────────────────────────────────────────────
 function loadSavedGuestName(){
-  try{
-    var n = localStorage.getItem('splitsies_guestname');
-    if(n){ el('guestName').value=n; el('savedNameHint').style.display='block'; updateGuestCalc(); }
-  }catch(e){}
+  // Name is intentionally not remembered — splitter always types fresh.
 }
 
 function saveGuestName(name){
-  try{ localStorage.setItem('splitsies_guestname', name); }catch(e){}
+  // Saving disabled — name is cleared on every visit.
 }
 
 function clearSavedName(){
