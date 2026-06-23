@@ -585,13 +585,13 @@ select:focus{border-color:var(--accent)}
       <span id="payGcashNum" style="display:none">—</span>
     </div>
     <button id="copyNumBtn" onclick="copyPayNum()" style="width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,#00B37A,#009A67);color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;box-shadow:0 4px 16px rgba(0,179,122,0.2)">📋 Tap to Copy GCash Number</button>
-    <button onclick="openGcashApp()" style="width:100%;padding:15px;border-radius:12px;border:2px solid #00B37A;background:#fff;color:#00B37A;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px">
-      <svg width="20" height="20" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="#00B37A"/><path d="M29 10 Q29 6 22 6 Q15 6 15 11 Q15 17 22 19 L28 21" fill="none" stroke="white" stroke-width="4.5" stroke-linecap="round"/><path d="M20 26 L26 27 Q33 29 33 34 Q33 39 26 39 Q19 39 19 34" fill="none" stroke="white" stroke-width="4.5" stroke-linecap="round" opacity="0.7"/></svg>
+    <button onclick="openGcashApp()" style="width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,#0071CE,#005BB5);color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(0,113,206,0.3)">
+      <svg width="20" height="20" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="rgba(255,255,255,0.2)"/><path d="M29 10 Q29 6 22 6 Q15 6 15 11 Q15 17 22 19 L28 21" fill="none" stroke="white" stroke-width="4.5" stroke-linecap="round"/><path d="M20 26 L26 27 Q33 29 33 34 Q33 39 26 39 Q19 39 19 34" fill="none" stroke="white" stroke-width="4.5" stroke-linecap="round" opacity="0.7"/></svg>
       Open GCash App
     </button>
   </div>
 
-  <button class="btn" style="margin-bottom:12px;background:linear-gradient(135deg,#00B37A,#008F60);color:#fff;box-shadow:0 4px 16px rgba(0,179,122,0.3)" onclick="confirmSent()">✅ Done Sending? Confirm Here</button>
+  <button class="btn" style="margin-bottom:12px;background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;box-shadow:0 4px 20px rgba(245,158,11,0.4);font-size:17px;letter-spacing:-0.2px" onclick="confirmSent()">💸 Done Sending? Confirm Here</button>
 
   <div class="card card-yellow">
     <div style="font-size:12px;color:var(--yellow);line-height:1.6">⚠️ <span id="payWarnHost">the biller</span> will confirm once they receive your payment. You'll show as <strong>Pending</strong> until then.</div>
@@ -2541,10 +2541,14 @@ function copyPayNum(){
   var btn = el('copyNumBtn');
   safeCopy(num, function(){
     btn.textContent='✓ Copied! Now open GCash and send';
-    btn.style.background='linear-gradient(135deg,#008F60,#006B47)';
+    btn.style.background='linear-gradient(135deg,#A8F0D0,#6FE0B0)';
+    btn.style.color='#00694A';
+    btn.style.boxShadow='0 4px 16px rgba(0,179,122,0.15)';
     setTimeout(function(){
       btn.textContent='📋 Tap to Copy GCash Number';
       btn.style.background='linear-gradient(135deg,#00B37A,#009A67)';
+      btn.style.color='#fff';
+      btn.style.boxShadow='0 4px 16px rgba(0,179,122,0.2)';
     },3000);
   });
 }
