@@ -814,6 +814,31 @@ function fetchRetry(url, opts, tries){
   });
 }
 
+// ─── Claude OCR call with transient-error retry ───────────────────────────────
+// The proxy returns HTTP 200 even when Anthropic replies with an error in the
+// body (e.g. {"error":{"type":"overloaded_error"}}), so fetchRetry's network-only
+// retry never catches it. Anthropic's API gets overloaded under peak load and
+// returns 529 / overloaded_error — that's transient, not a bad photo. Retry those
+// (and generic api_error / 5xx-style) a few times with exponential backoff before
+// surfacing failure to the user. onRetry lets the caller update the status text.
+function callClaude(body, onRetry, tries){
+  tries = (tries == null) ? 4 : tries;
+  var TRANSIENT = { overloaded_error:1, api_error:1, rate_limit_error:1, timeout_error:1 };
+  return fetchRetry('/api/claude', {
+    method:'POST', headers:{'Content-Type':'application/json'}, body:body
+  }).then(function(r){ return r.json(); }).then(function(data){
+    var errType = data && data.error && data.error.type;
+    if(errType && TRANSIENT[errType] && tries > 1){
+      var attempt = 5 - tries;          // 1, 2, 3
+      var waitMs  = Math.min(1000 * Math.pow(2, attempt - 1), 8000); // 1s, 2s, 4s
+      if(typeof onRetry === 'function') onRetry(attempt, errType);
+      return new Promise(function(res){ setTimeout(res, waitMs); })
+        .then(function(){ return callClaude(body, onRetry, tries - 1); });
+    }
+    return data;
+  });
+}
+
 // ─── Supabase helpers ─────────────────────────────────────────────────────────
 // Writes use Prefer:return=minimal so they never need SELECT on the row. Row IDs
 // are generated client-side (uuid()) so we don't depend on the server echoing the
@@ -1775,8 +1800,9 @@ function runAI(file){
       ]}]
     });
 
-    fetchRetry('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
-    .then(function(r){ return r.json(); })
+    callClaude(body, function(attempt){
+      el('aiLog').textContent = 'Splitz is in high demand right now — retrying (' + attempt + '/3)…';
+    })
     .then(function(data){
       clearTimeout(timeoutMsg);
       try{
@@ -1789,7 +1815,12 @@ function runAI(file){
           text = data.content[0].text;
           el('aiLog').textContent = text;
         } else if(data && data.error) {
-          el('aiLog').textContent = 'API Error: ' + JSON.stringify(data.error).slice(0,300);
+          var et = data.error.type;
+          if(et === 'overloaded_error' || et === 'rate_limit_error' || et === 'api_error'){
+            el('aiLog').textContent = '⚠️ Splitz is overloaded right now (too many people scanning at once). Please wait a moment and tap Upload Receipt again.';
+          } else {
+            el('aiLog').textContent = 'API Error: ' + JSON.stringify(data.error).slice(0,300);
+          }
           throw new Error('shown');
         } else {
           el('aiLog').textContent = 'Unexpected response: ' + JSON.stringify(data).slice(0,300);
