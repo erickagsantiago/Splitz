@@ -314,19 +314,6 @@ select:focus{border-color:var(--accent)}
     <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)"/>
   </div>
 
-  <!-- Split between -->
-  <div class="card">
-    <div class="slabel">Split Between</div>
-    <div class="counter">
-      <button class="cbtn" onclick="changeNum(-1)">−</button>
-      <div class="cnum">
-        <div class="cnumval" id="numDisplay">4</div>
-        <div class="cnumsub">people incl. you</div>
-      </div>
-      <button class="cbtn" onclick="changeNum(1)">+</button>
-    </div>
-  </div>
-
   <!-- Payment — compact chip if saved, full form if not -->
   <div id="gcashSavedChip" style="display:none!important">
     <div class="card" style="display:flex;justify-content:space-between;align-items:center">
@@ -399,6 +386,15 @@ select:focus{border-color:var(--accent)}
         <div id="itemList"></div>
       </div>
       <div id="modeEqual" style="display:none">
+        <div class="slabel">Split Between</div>
+        <div class="counter" style="margin-bottom:14px">
+          <button class="cbtn" onclick="changeNum(-1)">−</button>
+          <div class="cnum">
+            <div class="cnumval" id="numDisplay">4</div>
+            <div class="cnumsub">people incl. you</div>
+          </div>
+          <button class="cbtn" onclick="changeNum(1)">+</button>
+        </div>
         <div class="eq-box">
           <div style="font-size:12px;color:var(--mid);margin-bottom:8px">Each person pays</div>
           <div class="eq-amt" id="eqAmt">—</div>
