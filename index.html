@@ -2449,7 +2449,7 @@ function renderDash(){
   el('noSessionMsg').style.display='none';
   el('sessionTabsWrap').style.display='block';
   el('sessionDetail').style.display='block';
-  el('sessionCount').textContent = '('+sessions.length+'/'+MAX_SESSIONS+')';
+  el('sessionCount').textContent = '('+sessions.length+')';
 
   // Render session grid
   var tabsHtml = sessions.map(function(s,i){
