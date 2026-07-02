@@ -1175,7 +1175,6 @@ function showNewPaymentNotification(name){
 }
 
 
-var MAX_SESSIONS = 7;
 var numPeople  = 4;
 var items      = [];
 var svcFromReceipt = null;
@@ -2134,11 +2133,6 @@ function saveCurrentSession(){
     sessions[exists]._draft    = true;
     activeSession = exists;
   } else {
-    if(sessions.length >= MAX_SESSIONS){
-      sessions.shift();
-      // Adjust activeSession index after shift to avoid drift
-      if(activeSession !== null && activeSession > 0) activeSession--;
-    }
     var billNum = 'Bill #'+(sessions.length+1);
     sessions.push({
       id:        Date.now(),
