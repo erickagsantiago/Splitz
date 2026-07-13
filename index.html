@@ -2793,6 +2793,7 @@ document.addEventListener('DOMContentLoaded', function(){
       <label class="flabel">Description</label>
       <input type="text" id="tExpDesc" placeholder="e.g. Shinkansen Tokyo→Osaka" autocomplete="off"/>
     </div>
+    <div style="font-size:11px;color:var(--dim);font-style:italic;margin-bottom:6px">This is only an estimated PHP amount — actual rate may vary.</div>
     <div style="display:flex;gap:10px">
       <div class="field" style="flex:1">
         <label class="flabel">Amount (<span id="tExpCurrLabel">—</span>)</label>
@@ -2800,7 +2801,7 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
       <div class="field" style="flex:1">
         <label class="flabel">≈ PHP</label>
-        <input type="number" id="tExpPhp" placeholder="0.00" style="color:var(--accent)"/>
+        <input type="text" id="tExpPhp" placeholder="0.00" readonly style="color:var(--accent);cursor:default"/>
       </div>
     </div>
     <div class="field">
@@ -3135,7 +3136,7 @@ function calcPhpEquiv(){
   var rate = tExchangeRate;
   if(rate == null && tCurrentTrip) rate = rateFor(tCurrentTrip.currency);
   if(rate && amt){
-    el('tExpPhp').value = (amt * rate).toFixed(2);
+    el('tExpPhp').value = (amt * rate).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2});
   } else if(!amt){
     el('tExpPhp').value = '';
   }
@@ -3928,7 +3929,7 @@ function submitTExpense(){
   var desc   = (el('tExpDesc').value||'').trim();
   var cat    = el('tExpCategory').value;
   var amtF   = parseFloat(el('tExpAmount').value)||0;
-  var amtPHP = parseFloat(el('tExpPhp').value)||0;
+  var amtPHP = parseFloat((el('tExpPhp').value||'').replace(/,/g,''))||0;
   var date   = el('tExpDate').value;
 
   if(!amtF){ showToast('Please enter an amount'); return; }
