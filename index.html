@@ -289,7 +289,7 @@ body[data-mode="travel"] {
         <div style="text-align:left">
           <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
             <div style="font-size:17px;font-weight:800;color:#fff">Travel Split</div>
-            <span style="background:#E03B3B;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;letter-spacing:0.5px">NEW</span>
+            <span style="background:#1A6FE8;color:#fff;font-size:9px;font-weight:800;padding:2px 8px;border-radius:20px;letter-spacing:0.5px;white-space:nowrap">COMING SOON</span>
           </div>
           <div style="font-size:13px;color:rgba(255,255,255,0.75);line-height:1.4">Track trip expenses with your crew in any currency</div>
         </div>
@@ -3127,6 +3127,11 @@ function calcPhpEquiv(){
 
 
 function switchMainTab(tab){
+  // Travel Split is gated behind the early-access passcode.
+  if(tab === 'travel' && !hasTravelAccess()){
+    showTravelPasscode();
+    return;
+  }
   var isDining = tab === 'dining';
   // Tab button styles
   el('tabDining').style.color = isDining ? 'var(--accent)' : 'var(--dim)';
@@ -3162,32 +3167,83 @@ function switchMainTab(tab){
   }
 }
 
+// Travel Split is in private beta — gated behind an early-access passcode.
+var TRAVEL_PASSCODE = 'EGS911';
+function hasTravelAccess(){
+  try{ return sessionStorage.getItem('splitz_travel_access')==='1'; }catch(e){ return false; }
+}
+
 function chooseMode(mode){
-  // Fade out welcome screen
+  if(mode === 'travel'){
+    // Gate behind the early-access passcode before leaving the welcome screen.
+    if(hasTravelAccess()) proceedTravel();
+    else showTravelPasscode();
+    return;
+  }
+
+  // Dining — fade out welcome screen and proceed
   var ws = el('welcomeScreen');
   ws.style.transition = 'opacity 0.3s';
   ws.style.opacity = '0';
   setTimeout(function(){ ws.style.display='none'; }, 300);
+  setTimeout(function(){
+    initInviteGate();
+    setTimeout(function(){
+      try{ localStorage.removeItem('splitsies_onboarded'); }catch(e){}
+      initOnboard();
+    }, 400);
+  }, 300);
+}
 
-  if(mode === 'dining'){
-    // Show dining onboarding modal then invite gate
-    setTimeout(function(){
-      initInviteGate();
-      // Show dining onboarding after a short delay
-      setTimeout(function(){
-        try{ localStorage.removeItem('splitsies_onboarded'); }catch(e){}
-        initOnboard();
-      }, 400);
-    }, 300);
-  } else {
-    // Travel mode — check if biller
-    setTimeout(function(){
-      // Show travel onboarding modal
-      var m = el('tOnboardModal');
-      // Skip modal from welcome — just proceed to invite gate
-      initInviteGate();
-    }, 300);
+function proceedTravel(){
+  var ws = el('welcomeScreen');
+  if(ws){
+    ws.style.transition = 'opacity 0.3s';
+    ws.style.opacity = '0';
+    setTimeout(function(){ ws.style.display='none'; }, 300);
   }
+  setTimeout(function(){
+    try{ sessionStorage.setItem('splitsies_biller','1'); }catch(e){}
+    billerMode = true;
+    el('navBar').style.display = 'none';
+    el('mainTabBar').style.display = 'block';
+    switchMainTab('travel');
+  }, ws ? 300 : 0);
+}
+
+function showTravelPasscode(){
+  if(document.getElementById('travelPassOverlay')) return;
+  var overlay = document.createElement('div');
+  overlay.id = 'travelPassOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:10002;background:rgba(10,25,50,0.75);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)';
+  overlay.innerHTML = '<div style="background:#fff;border-radius:22px;padding:28px 24px;width:100%;max-width:360px;text-align:center;box-shadow:0 12px 48px rgba(0,0,0,0.3)">'
+    +'<div style="font-size:40px;margin-bottom:8px">✈️</div>'
+    +'<div style="font-size:19px;font-weight:900;color:#0F1F3D;margin-bottom:6px">Travel Split — Early Access</div>'
+    +'<div style="font-size:13px;color:#5A6A85;margin-bottom:20px;line-height:1.5">This feature is in private beta. Enter your access passcode to continue.</div>'
+    +'<input type="password" id="travelPassInput" placeholder="Access passcode" autocomplete="off" style="width:100%;background:#F7F8FA;border:1px solid #EAECF0;border-radius:12px;padding:13px 14px;font-size:16px;font-family:inherit;outline:none;text-align:center;letter-spacing:2px;min-height:50px"/>'
+    +'<div id="travelPassErr" style="display:none;font-size:12px;color:#E03B3B;margin-top:8px;font-weight:600">❌ Wrong passcode — try again</div>'
+    +'<div style="display:flex;gap:10px;margin-top:18px">'
+    +'<button id="travelPassCancel" style="flex:1;padding:13px;border-radius:12px;border:1px solid #EAECF0;background:#F7F8FA;color:#5A6A85;font-size:15px;font-weight:700;cursor:pointer;font-family:inherit">Cancel</button>'
+    +'<button id="travelPassSubmit" style="flex:1;padding:13px;border-radius:12px;border:none;background:linear-gradient(135deg,#1A6FE8,#0055A4);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">Unlock →</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+  var input = el('travelPassInput');
+  function submit(){
+    var v = (input.value||'').trim();
+    if(v === TRAVEL_PASSCODE){
+      try{ sessionStorage.setItem('splitz_travel_access','1'); }catch(e){}
+      overlay.remove();
+      proceedTravel();
+    } else {
+      el('travelPassErr').style.display='block';
+      input.value='';
+      input.focus();
+    }
+  }
+  el('travelPassSubmit').onclick = submit;
+  el('travelPassCancel').onclick = function(){ overlay.remove(); };
+  input.addEventListener('keydown', function(e){ if(e.key==='Enter') submit(); });
+  setTimeout(function(){ input.focus(); }, 100);
 }
 
 function closeTOnboardAndProceed(){
