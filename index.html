@@ -2702,16 +2702,29 @@ document.addEventListener('DOMContentLoaded', function(){
       <div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:6px">🔗 Trip Link Ready!</div>
       <div style="font-size:13px;color:var(--accent);font-weight:600;word-break:break-all;margin-bottom:12px" id="tLinkUrl">—</div>
       <button class="btn btn-primary" onclick="copyTripLink()" id="tCopyBtn" style="margin-bottom:8px">📋 Copy & Send to Crew</button>
-      <button class="btn btn-primary" onclick="goToTravelDash()" style="background:linear-gradient(135deg,#1A6FE8,#0055A4)">📊 Open Trip Dashboard →</button>
+      <button class="btn btn-primary" onclick="goToTravelDash()" style="background:linear-gradient(135deg,#1A6FE8,#0055A4)">📊 Open Trip →</button>
     </div>
   </div>
 </div>
 
-<!-- T3: Trip Member View (opened via link) -->
+<!-- T3: Trip Member / Shared Contributor View -->
 <div id="tMember" class="screen">
-  <div style="font-size:13px;color:var(--dim);padding-top:24px;padding-bottom:2px">Trip organized by <span style="color:var(--accent);font-weight:700" id="tMemberHost">—</span></div>
-  <div class="ptitle" id="tMemberTitle">Loading trip…</div>
+  <div style="display:flex;justify-content:space-between;align-items:center;padding-top:24px;padding-bottom:2px">
+    <div style="font-size:13px;color:var(--blue);font-weight:700">✈️ Shared Trip</div>
+    <span id="tMemberCloseLink" onclick="closeTripFromMember()" style="display:none;font-size:11px;color:var(--mid);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline">Close Trip</span>
+  </div>
+  <div class="ptitle" style="padding-top:2px" id="tMemberTitle">Loading trip…</div>
   <div class="psub" id="tMemberSub">Please wait</div>
+
+  <!-- Trip closed banner -->
+  <div id="tMemberClosedBanner" style="display:none;margin-top:14px;background:var(--abg);border:1px solid rgba(26,111,232,0.2);border-radius:12px;padding:12px 14px;font-size:12px;color:var(--blue);font-weight:700;text-align:center">🎉 This trip is settled &amp; closed — expenses are locked.</div>
+
+  <!-- Trip link — anyone can share to invite the crew -->
+  <div class="card mt16" id="tMemberLinkCard" style="display:none">
+    <div style="font-size:11px;color:var(--dim);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px">Trip Link · share to invite the crew</div>
+    <div style="font-size:13px;color:var(--blue);font-weight:600;word-break:break-all;margin-bottom:10px" id="tMemberLink">—</div>
+    <button class="btn" style="padding:10px;font-size:13px;background:linear-gradient(135deg,#1A6FE8,#0055A4);color:#fff;border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700" onclick="copyMemberLink()">📋 Copy Trip Link</button>
+  </div>
 
   <!-- Join section -->
   <div id="tJoinSection" class="card mt16" style="display:none">
@@ -2737,7 +2750,7 @@ document.addEventListener('DOMContentLoaded', function(){
     <!-- Add expense button -->
     <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px">
       <div style="font-size:16px;font-weight:800">Expenses</div>
-      <button onclick="openAddExpense()" style="padding:8px 16px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+ Add</button>
+      <button id="tAddExpenseBtn" onclick="openAddExpense()" style="padding:8px 16px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+ Add</button>
     </div>
 
     <div id="tExpenseList"></div>
@@ -3040,19 +3053,15 @@ function goToTravelCreate(){
   el('tStartDate').value = today;
 }
 
+// Opens the shared contributor view for the current trip (same view everyone
+// sees). Used right after creating a trip.
 function goToTravelDash(){
   if(!tCurrentTrip) return;
-  if(!tTripUnlocked){
-    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-    el('tLock').classList.add('active');
-    el('tLockInput').value='';
-    window.scrollTo(0,0);
-    return;
-  }
+  document.body.setAttribute('data-mode','travel');
   document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-  el('tDash').classList.add('active');
+  el('tMember').classList.add('active');
   window.scrollTo(0,0);
-  renderTDash();
+  renderMemberView();
 }
 
 function updateNav(n){
@@ -3595,28 +3604,19 @@ function loadMyTrips(){
   });
 }
 
+// Opening one of your own trips shows the exact same shared contributor view
+// that everyone else sees — no separate organizer dashboard, no admin.
 function openMyTrip(tripId){
   supaGet('trips?id=eq.'+tripId+'&select=*').then(function(rows){
     if(!rows||!rows[0]) return;
     tCurrentTrip = rows[0];
-    // Check if already unlocked this session
-    try{
-      if(sessionStorage.getItem('splitz_trip_'+tripId+'_unlocked')==='1'){
-        tTripUnlocked = true;
-        document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-        el('tDash').classList.add('active');
-        el('tDashTitle').textContent = tCurrentTrip.name;
-        var appUrl = window.location.origin + window.location.pathname;
-        el('tDashLink').textContent = appUrl + '?trip=' + tCurrentTrip.slug;
-        renderTDash();
-        return;
-      }
-    }catch(e){}
-    // Need password
+    tExchangeRate = null;
+    if(tCurrentTrip.currency !== 'PHP') fetchExchangeRate(tCurrentTrip.currency);
+    document.body.setAttribute('data-mode','travel');
     document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
-    el('tLock').classList.add('active');
-    el('tLockInput').value='';
+    el('tMember').classList.add('active');
     window.scrollTo(0,0);
+    renderMemberView();
   });
 }
 
@@ -3657,9 +3657,16 @@ function loadTripBySlug(slug, cb){
 
 function renderMemberView(){
   if(!tCurrentTrip) return;
-  el('tMemberHost').textContent = tCurrentTrip.name;
   el('tMemberTitle').textContent = tCurrentTrip.name;
   el('tMemberSub').textContent = tCurrentTrip.country + ' · ' + tCurrentTrip.currency;
+
+  // Trip link — anyone can copy and invite the crew
+  var appUrl = window.location.origin + window.location.pathname;
+  el('tMemberLink').textContent = appUrl + '?trip=' + tCurrentTrip.slug;
+  el('tMemberLinkCard').style.display = 'block';
+
+  // Closed state
+  el('tMemberClosedBanner').style.display = tCurrentTrip.status==='closed' ? 'block' : 'none';
 
   // Load saved member name
   var savedName = null;
@@ -3725,7 +3732,31 @@ function showTMemberExpenses(){
   el('tJoinSection').style.display='none';
   el('tExpenseSection').style.display='block';
   el('tMemberNameHint').style.display='block';
+  // Closed trips are read-only for everyone.
+  var isClosed = tCurrentTrip && tCurrentTrip.status==='closed';
+  var addBtn = el('tAddExpenseBtn'); if(addBtn) addBtn.style.display = isClosed ? 'none' : '';
+  var closeLink = el('tMemberCloseLink'); if(closeLink) closeLink.style.display = isClosed ? 'none' : 'inline';
   loadTripExpenses();
+}
+
+// Any contributor can copy the trip link to invite others.
+function copyMemberLink(){
+  var url = (el('tMemberLink').textContent||'').trim();
+  safeCopy(url, function(){ showToast('✓ Trip link copied!','success'); });
+}
+
+// Any contributor can close the trip once everyone has settled.
+function closeTripFromMember(){
+  if(!tCurrentTrip) return;
+  showDeleteConfirm('Close this trip? It locks new expenses for everyone and marks the trip as settled.', function(){
+    supaPatch('trips?id=eq.'+tCurrentTrip.id, { status:'closed' }).then(function(){
+      tCurrentTrip.status='closed';
+      showToast('✓ Trip closed!','success');
+      el('tMemberClosedBanner').style.display='block';
+      var addBtn = el('tAddExpenseBtn'); if(addBtn) addBtn.style.display='none';
+      var closeLink = el('tMemberCloseLink'); if(closeLink) closeLink.style.display='none';
+    });
+  });
 }
 
 // ── Load & render expenses ─────────────────────────────────────────────
@@ -3880,6 +3911,7 @@ function renderTMyBalance(members, expenses, splits){
 
 // ── Add expense ────────────────────────────────────────────────────────
 function openAddExpense(){
+  if(tCurrentTrip && tCurrentTrip.status==='closed'){ showToast('This trip is closed — expenses are locked'); return; }
   if(!tCurrentMember){ showToast('Please join the trip first'); return; }
   // Set today's date
   el('tExpDate').value = new Date().toISOString().split('T')[0];
