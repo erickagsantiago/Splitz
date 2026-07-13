@@ -2859,9 +2859,9 @@ document.addEventListener('DOMContentLoaded', function(){
     <button class="btn" style="padding:10px;font-size:13px;background:linear-gradient(135deg,#1A6FE8,#0055A4);color:#fff;border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700" onclick="copyTDashLink()">📋 Copy & Resend Link</button>
   </div>
 
-  <!-- Member balances -->
+  <!-- Who paid upfront -->
   <div class="card">
-    <div class="slabel">Member Balances</div>
+    <div class="slabel">Who Paid Upfront</div>
     <div id="tDashBalances"></div>
   </div>
 
@@ -2874,9 +2874,9 @@ document.addEventListener('DOMContentLoaded', function(){
     <div id="tDashExpenses"></div>
   </div>
 
-  <!-- Settlement -->
+  <!-- Settlement & bank details -->
   <div class="card">
-    <div class="slabel">Settlement Summary</div>
+    <div class="slabel">Settlement &amp; Bank Details</div>
     <div id="tDashSettlement"></div>
   </div>
 
@@ -2901,7 +2901,7 @@ document.addEventListener('DOMContentLoaded', function(){
     <div style="position:relative;margin-bottom:12px">
       <input type="password" id="tLockInput" placeholder="Enter trip password" autocomplete="off"
         style="width:100%;background:var(--muted);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:14px 48px 14px 14px;font-size:16px;font-family:inherit;outline:none;min-height:48px"
-        onkeydown="if(event.key='Enter') checkTripPassword()"/>
+        onkeydown="if(event.key==='Enter') checkTripPassword()"/>
       <button type="button" onclick="togglePwdVisibility('tLockInput',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px">👁️</button>
     </div>
     <button class="btn" style="background:linear-gradient(135deg,#1A6FE8,#0055A4);color:#fff;border:none" onclick="checkTripPassword()">Unlock Dashboard →</button>
@@ -3025,6 +3025,9 @@ function goToTravelCreate(){
   el('tCurrencyChip').style.display = 'none';
   el('tCountryList').style.display = 'none';
   el('tLinkReady').style.display = 'none';
+  _tripCreating = false;
+  var cb = document.querySelector('#tCreate .btn-primary');
+  if(cb){ cb.disabled = false; cb.style.opacity = ''; }
   // Set today as default start date
   var today = new Date().toISOString().split('T')[0];
   el('tStartDate').value = today;
@@ -3266,7 +3269,8 @@ function openSampleDash(){
     currency: 'JPY',
     currency_symbol: '¥',
     slug: 'sample',
-    status: 'active'
+    status: 'active',
+    password_hash: hashTripPassword('demo')  // so the sample bank-detail modal works
   };
   tTripUnlocked = true;
 
@@ -3323,33 +3327,51 @@ function openSampleDash(){
     expHtml += '<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin:12px 0 6px;display:flex;justify-content:space-between"><span>'+cat+'</span><span>'+fmt(catTotal)+'</span></div>';
     grouped[cat].forEach(function(exp){
       var payer = members.find(function(m){return m.id===exp.paid_by_member_id;});
-      expHtml += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
-        +'<div><div style="font-size:13px;font-weight:600">'+exp.description+'</div>'
-        +'<div style="font-size:11px;color:var(--dim)">'+(payer?payer.name+' · ':'')+exp.expense_date+'</div></div>'
-        +'<div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--blue)">'+sym+Number(exp.amount_foreign).toLocaleString()+'</div>'
-        +'<div style="font-size:11px;color:var(--dim)">'+fmt(exp.amount_php)+'</div></div></div>';
+      expHtml += '<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="flex:1;min-width:0;padding-right:12px">'
+        +'<div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.3">'+esc(exp.description)+'</div>'
+        +'<div style="font-size:12px;margin-top:4px">'
+        +(payer?'<span style="color:#00B37A;font-weight:700">'+esc(payer.name)+'</span><span style="color:var(--dim)"> paid · </span>':'')
+        +'<span style="color:var(--mid);font-weight:600">'+fmtDate(exp.expense_date)+'</span>'
+        +'</div></div>'
+        +'<div style="text-align:right;flex-shrink:0">'
+        +'<div style="font-size:17px;font-weight:900;color:var(--blue);letter-spacing:-0.3px">'+fmt(exp.amount_php)+'</div>'
+        +'<div style="font-size:12px;color:var(--dim);margin-top:2px">'+fmtForeign(exp.amount_foreign,sym)+'</div>'
+        +'</div></div>';
     });
   });
   el('tDashExpenses').innerHTML = expHtml;
 
-  // Balances
+  // Who Paid Upfront — just name + how much each fronted in PHP (no bank details)
+  var paidUpfront = { m1:0, m2:0, m3:0, m4:0 };
+  expenses.forEach(function(exp){ paidUpfront[exp.paid_by_member_id] += Number(exp.amount_php); });
   el('tDashBalances').innerHTML = members.map(function(m){
-    var bal = balance[m.id]||0;
-    return '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">'
-      +'<div><div style="font-size:14px;font-weight:700">'+m.name+'</div>'
-      +(m.bank_name?'<div style="font-size:11px;color:var(--dim)">'+m.bank_name+' · '+m.bank_account+'</div>':'<div style="font-size:11px;color:var(--dim)">No bank details</div>')+'</div>'
-      +'<div style="font-size:14px;font-weight:800;color:'+(bal>=0?'var(--accent)':'var(--red)')+';">'+(bal>=0?'Gets '+fmt(bal):'Owes '+fmt(Math.abs(bal)))+'</div>'
+    var paid = paidUpfront[m.id]||0;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">'
+      +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+esc(m.name)+'</div>'
+      +'<div style="font-size:15px;font-weight:800;color:'+(paid>0?'var(--blue)':'var(--dim)')+'">'+fmt(paid)+'</div>'
       +'</div>';
   }).join('');
 
-  // Settlement
+  // Settlement & bank details — owes/gets + tappable View Bank Details (demo password: demo)
   el('tDashSettlement').innerHTML = members.map(function(m){
     var bal = balance[m.id]||0;
-    return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
-      +'<span style="font-size:13px;font-weight:600">'+m.name+'</span>'
-      +'<span style="font-size:13px;font-weight:800;color:'+(bal>=0?'var(--accent)':'var(--red)')+';">'+(bal>=0?'Gets back ':' Owes ')+fmt(Math.abs(bal))+'</span>'
+    var hasBankDetails = m.bank_name||m.bank_account;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">'
+      +'<div>'
+      +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+esc(m.name)+'</div>'
+      +'<div class="tBankLink" data-mid="'+m.id+'" style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer;margin-top:3px">'
+      +(hasBankDetails?'🏦 View Bank Details':'🏦 No bank details added')+'</div>'
+      +'</div>'
+      +'<div style="font-size:15px;font-weight:800;color:'+(bal>=0?'var(--accent)':'var(--red)')+';">'
+      +(bal>=0?'Gets back '+fmt(bal):'Owes '+fmt(Math.abs(bal)))+'</div>'
       +'</div>';
   }).join('');
+  el('tDash')._members = members;
+  el('tDashSettlement').onclick = function(e){
+    var link = e.target.closest('.tBankLink');
+    if(link) viewBankDetails(link.getAttribute('data-mid'));
+  };
 
   // Add sample banner at top
   var existing = document.getElementById('sampleBanner');
@@ -3357,7 +3379,7 @@ function openSampleDash(){
     var banner = document.createElement('div');
     banner.id = 'sampleBanner';
     banner.style.cssText = 'background:var(--ybg);border:1px solid rgba(196,124,10,0.2);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--yellow);font-weight:700;text-align:center';
-    banner.textContent = '👀 This is a sample — dummy data only';
+    banner.textContent = '👀 This is a sample — dummy data only · bank-view password: demo';
     el('tDash').insertBefore(banner, el('tDash').firstChild);
   }
 }
@@ -3451,6 +3473,7 @@ function hashTripPassword(p){
   var h=0; for(var i=0;i<p.length;i++){h=(h*31+p.charCodeAt(i))>>>0;} return h.toString(36);
 }
 
+var _tripCreating = false;
 function createTrip(){
   var name  = (el('tName').value||'').trim();
   var pwd   = (el('tPassword').value||'').trim();
@@ -3467,6 +3490,16 @@ function createTrip(){
   if(pwd !== pwd2){ showToast('Passwords do not match'); return; }
   if(pwd.length < 4){ showToast('Password must be at least 4 characters'); return; }
 
+  // Guard against rapid double-taps creating duplicate trips.
+  if(_tripCreating) return;
+  _tripCreating = true;
+  var createBtn = document.querySelector('#tCreate .btn-primary');
+  if(createBtn){ createBtn.disabled = true; createBtn.style.opacity = '0.6'; }
+  function releaseCreateLock(){
+    _tripCreating = false;
+    if(createBtn){ createBtn.disabled = false; createBtn.style.opacity = ''; }
+  }
+
   var slug = 'trip-'+Math.random().toString(36).slice(2,10);
   var body = {
     name: name,
@@ -3481,7 +3514,7 @@ function createTrip(){
   };
 
   supaPost('trips', body).then(function(rows){
-    if(!rows || !rows[0]){ showToast('Could not create trip — try again'); return; }
+    if(!rows || !rows[0]){ showToast('Could not create trip — try again'); releaseCreateLock(); return; }
     tCurrentTrip = rows[0];
     tTripUnlocked = true;
     try{ sessionStorage.setItem('splitz_trip_'+rows[0].id+'_unlocked','1'); }catch(e){}
@@ -3501,7 +3534,11 @@ function createTrip(){
       el('tCopyBtn').textContent = '✓ Link Copied!';
       setTimeout(function(){ el('tCopyBtn').textContent = '📋 Copy & Send to Crew'; }, 3000);
     });
-  });
+    // Keep the lock — the trip is created and the link is shown. Re-enabling
+    // would invite an accidental second identical trip. The form resets when
+    // the user navigates back via goToTravelCreate.
+    _tripCreating = false;
+  }).catch(function(){ showToast('Could not create trip — try again'); releaseCreateLock(); });
 }
 
 function copyTripLink(){
@@ -3731,6 +3768,16 @@ function computeTripBalances(members, expenses, splits){
 }
 
 function fmtForeign(amt, sym){ return sym + Number(amt).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+// Turn '2025-06-15' into 'Jun 15, 2025' (parsed manually to avoid timezone shifts).
+function fmtDate(d){
+  if(!d) return '';
+  var p = String(d).split('-');
+  if(p.length !== 3) return d;
+  var months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+  var mi = parseInt(p[1],10) - 1;
+  if(mi < 0 || mi > 11) return d;
+  return months[mi] + ' ' + parseInt(p[2],10) + ', ' + p[0];
+}
 
 function renderTExpenses(members, expenses, splits){
   var sym = tCurrentTrip.currency_symbol || '';
@@ -3987,11 +4034,17 @@ function renderTDashData(members, expenses, splits){
       expHtml += '<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin:12px 0 6px;display:flex;justify-content:space-between"><span>'+cat+'</span><span>'+fmt(catTotal)+'</span></div>';
       grouped[cat].forEach(function(exp){
         var payer=members.find(function(m){return m.id===exp.paid_by_member_id;});
-        expHtml+='<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
-          +'<div><div style="font-size:13px;font-weight:600">'+esc(exp.description)+'</div>'
-          +'<div style="font-size:11px;color:var(--dim)">'+(payer?esc(payer.name)+' · ':'')+exp.expense_date+'</div></div>'
-          +'<div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--blue)">'+fmtForeign(exp.amount_foreign,sym)+'</div>'
-          +'<div style="font-size:11px;color:var(--dim)">'+fmt(exp.amount_php)+'</div></div></div>';
+        expHtml+='<div style="display:flex;justify-content:space-between;align-items:flex-start;padding:11px 0;border-bottom:1px solid var(--border)">'
+          +'<div style="flex:1;min-width:0;padding-right:12px">'
+          +'<div style="font-size:15px;font-weight:800;color:var(--text);line-height:1.3">'+esc(exp.description)+'</div>'
+          +'<div style="font-size:12px;margin-top:4px">'
+          +(payer?'<span style="color:#00B37A;font-weight:700">'+esc(payer.name)+'</span><span style="color:var(--dim)"> paid · </span>':'')
+          +'<span style="color:var(--mid);font-weight:600">'+fmtDate(exp.expense_date)+'</span>'
+          +'</div></div>'
+          +'<div style="text-align:right;flex-shrink:0">'
+          +'<div style="font-size:17px;font-weight:900;color:var(--blue);letter-spacing:-0.3px">'+fmt(exp.amount_php)+'</div>'
+          +'<div style="font-size:12px;color:var(--dim);margin-top:2px">'+fmtForeign(exp.amount_foreign,sym)+'</div>'
+          +'</div></div>';
       });
     });
     el('tDashExpenses').innerHTML = expHtml||'<div style="color:var(--dim);font-size:13px;padding:8px 0">No expenses yet.</div>';
@@ -4040,7 +4093,11 @@ document.addEventListener('DOMContentLoaded', function(){
   if(tripSlug){
     billerMode = false;
 
+    // Members opening a shared link must land straight on the trip, not the
+    // welcome/mode-picker overlay that covers the whole screen by default.
+    var ws = el('welcomeScreen'); if(ws) ws.style.display = 'none';
     el('navBar').style.display = 'none';
+    var mtb = el('mainTabBar'); if(mtb) mtb.style.display = 'none';
     document.body.setAttribute('data-mode','travel');
     document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
     el('tMember').classList.add('active');
