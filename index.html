@@ -55,14 +55,14 @@ body{
 
 /* Forms — 16px prevents iOS zoom on focus */
 .flabel{display:block;font-size:12px;color:var(--mid);font-weight:600;margin-bottom:6px}
-input[type=text],input[type=number],input[type=password]{
+input[type=text],input[type=number]{
   width:100%;background:var(--muted);border:1px solid var(--border);
   border-radius:10px;color:var(--text);padding:12px 14px;
   font-size:16px;font-family:inherit;outline:none;
   -webkit-appearance:none;appearance:none;
   min-height:48px;
 }
-input[type=text]:focus,input[type=number]:focus,input[type=password]:focus{border-color:var(--accent)}
+input[type=text]:focus,input[type=number]:focus{border-color:var(--accent)}
 input[type=number]{-moz-appearance:textfield}
 input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
@@ -189,17 +189,135 @@ select:focus{border-color:var(--accent)}
 .note{font-size:11px;color:var(--dim);text-align:center;padding:4px 0 8px}
 
 /* Invite gate */
-.invite-gate{position:fixed;inset:0;z-index:9999;background:linear-gradient(160deg,#00B37A 0%,#007A50 100%);display:flex;align-items:center;justify-content:center;padding:24px}
-.invite-box{background:rgba(255,255,255,0.12);border:1px solid rgba(255,255,255,0.25);border-radius:24px;padding:36px 28px;width:100%;max-width:380px;text-align:center;backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px)}
-.invite-input{width:100%;background:rgba(255,255,255,0.15);border:1.5px solid rgba(255,255,255,0.3);border-radius:12px;color:#fff;padding:14px 18px;font-size:18px;font-family:inherit;font-weight:700;letter-spacing:3px;text-align:center;outline:none;text-transform:uppercase;transition:border-color 0.2s;caret-color:#fff}
-.invite-input:focus{border-color:#fff;background:rgba(255,255,255,0.2)}
-.invite-input::placeholder{letter-spacing:1px;font-weight:400;font-size:14px;text-transform:none;opacity:0.6;color:#fff}
-.invite-input.error{border-color:#FFD6D6;animation:shake 0.3s ease}
+
+/* Travel blue theme — applied when body has data-mode="travel" */
+body[data-mode="travel"] .hdr {
+  background: linear-gradient(135deg, #1A6FE8, #0055A4) !important;
+  box-shadow: 0 2px 16px rgba(26,111,232,0.3) !important;
+}
+body[data-mode="travel"] #mainTabBar {
+  border-bottom-color: rgba(26,111,232,0.2) !important;
+}
+body[data-mode="travel"] #tabTravel {
+  color: #1A6FE8 !important;
+  border-bottom-color: #1A6FE8 !important;
+}
+body[data-mode="travel"] .btn-primary {
+  background: linear-gradient(135deg, #1A6FE8, #0055A4) !important;
+  box-shadow: 0 4px 16px rgba(26,111,232,0.25) !important;
+}
+body[data-mode="travel"] .btn-green-outline {
+  background: rgba(26,111,232,0.08) !important;
+  color: #1A6FE8 !important;
+  border-color: rgba(26,111,232,0.25) !important;
+}
+body[data-mode="travel"] .upload-lbl {
+  background: linear-gradient(135deg, #1A6FE8, #0055A4) !important;
+}
+body[data-mode="travel"] .cnumval { color: #1A6FE8 !important; }
+body[data-mode="travel"] .stat-val.green { color: #1A6FE8 !important; }
+body[data-mode="travel"] .nic.active {
+  background: rgba(26,111,232,0.08) !important;
+  border-color: rgba(26,111,232,0.2) !important;
+  color: #1A6FE8 !important;
+}
+body[data-mode="travel"] .nlbl.active { color: #1A6FE8 !important; }
+body[data-mode="travel"] .prog-fill {
+  background: linear-gradient(90deg, #1A6FE8, #00B37A) !important;
+}
+body[data-mode="travel"] .pill-green {
+  background: rgba(26,111,232,0.08) !important;
+  color: #1A6FE8 !important;
+}
+body[data-mode="travel"] input[type=text]:focus,
+body[data-mode="travel"] input[type=number]:focus,
+body[data-mode="travel"] select:focus {
+  border-color: #1A6FE8 !important;
+}
+body[data-mode="travel"] .stab.active {
+  color: #1A6FE8 !important;
+}
+body[data-mode="travel"] .sess-tab.active {
+  border-color: #1A6FE8 !important;
+  background: rgba(26,111,232,0.08) !important;
+  color: #1A6FE8 !important;
+}
+body[data-mode="travel"] :root {
+  --accent: #1A6FE8 !important;
+  --accent2: #0055A4 !important;
+  --abg: rgba(26,111,232,0.08) !important;
+}
 </style>
 </head>
-<script defer src="/_vercel/insights/script.js"></script>
 <body>
 
+<!-- ══ Welcome Screen ══ -->
+<div id="welcomeScreen" style="position:fixed;inset:0;z-index:10000;background:linear-gradient(160deg,#00B37A 0%,#007A50 60%,#1A3A5C 100%);display:flex;align-items:center;justify-content:center;padding:24px">
+  <div style="width:100%;max-width:380px;text-align:center">
+
+    <!-- Logo -->
+    <div style="margin:0 auto 32px">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 40 40" width="64" height="64" style="display:block;margin:0 auto 12px">
+        <rect x="0" y="0" width="40" height="40" rx="11" fill="rgba(255,255,255,0.18)"/>
+        <path d="M29 10 Q29 6 22 6 Q15 6 15 11 Q15 17 22 19 L28 21" fill="none" stroke="white" stroke-width="5" stroke-linecap="round"/>
+        <line x1="26" y1="22" x2="22" y2="24" stroke="white" stroke-width="1.8" stroke-linecap="round" stroke-dasharray="2 3" opacity="0.55"/>
+        <path d="M20 26 L26 27 Q33 29 33 34 Q33 39 26 39 Q19 39 19 34" fill="none" stroke="white" stroke-width="5" stroke-linecap="round" opacity="0.55"/>
+      </svg>
+      <div style="font-size:32px;font-weight:900;color:#fff;letter-spacing:-1px">Splitz</div>
+      <div style="font-size:14px;color:rgba(255,255,255,0.75);margin-top:6px">What are you splitting today?</div>
+    </div>
+
+    <!-- Choice cards -->
+    <div style="display:flex;flex-direction:column;gap:14px">
+
+      <!-- Dining -->
+      <button onclick="chooseMode('dining')" style="width:100%;padding:20px;border-radius:18px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.12);cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;gap:16px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:all 0.15s;-webkit-tap-highlight-color:transparent">
+        <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">🍽️</div>
+        <div style="text-align:left">
+          <div style="font-size:17px;font-weight:800;color:#fff;margin-bottom:3px">Dining Split</div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.75);line-height:1.4">Split a restaurant bill using AI receipt scanning</div>
+        </div>
+        <div style="margin-left:auto;color:rgba(255,255,255,0.6);font-size:20px;flex-shrink:0">›</div>
+      </button>
+
+      <!-- Travel -->
+      <button onclick="chooseMode('travel')" style="width:100%;padding:20px;border-radius:18px;border:1.5px solid rgba(255,255,255,0.3);background:rgba(255,255,255,0.12);cursor:pointer;font-family:inherit;text-align:left;display:flex;align-items:center;gap:16px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);transition:all 0.15s;-webkit-tap-highlight-color:transparent">
+        <div style="width:52px;height:52px;border-radius:14px;background:rgba(255,255,255,0.2);display:flex;align-items:center;justify-content:center;font-size:26px;flex-shrink:0">✈️</div>
+        <div style="text-align:left">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:3px">
+            <div style="font-size:17px;font-weight:800;color:#fff">Travel Split</div>
+            <span style="background:#E03B3B;color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:20px;letter-spacing:0.5px">NEW</span>
+          </div>
+          <div style="font-size:13px;color:rgba(255,255,255,0.75);line-height:1.4">Track trip expenses with your crew in any currency</div>
+        </div>
+        <div style="margin-left:auto;color:rgba(255,255,255,0.6);font-size:20px;flex-shrink:0">›</div>
+      </button>
+    </div>
+
+    <div style="margin-top:24px;font-size:11px;color:rgba(255,255,255,0.45)">Beta · Free to use</div>
+  </div>
+</div>
+
+    <div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;margin-bottom:8px">Biller Access</div>
+    <div style="font-size:14px;color:rgba(255,255,255,0.75);margin-bottom:28px;line-height:1.6">This area is for billers only.<br/>Enter your invite code to continue.</div>
+
+    <!-- Code input -->
+    <input type="text" id="inviteInput" class="invite-input" placeholder="Enter invite code" maxlength="20"
+      oninput="this.value=this.value.toUpperCase()"
+      onkeydown="if(event.key==='Enter') checkInviteCode()"/>
+
+    <div id="inviteError" style="display:none;font-size:12px;color:#FFD6D6;margin-top:8px;font-weight:600">
+      ❌ Invalid code — please try again
+    </div>
+
+    <button onclick="checkInviteCode()" style="width:100%;margin-top:16px;padding:15px;border-radius:12px;border:none;background:#fff;color:#00B37A;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
+      Enter →
+    </button>
+
+
+
+  </div>
+</div>
 
 <!-- HEADER -->
 <div class="hdr">
@@ -225,6 +343,14 @@ select:focus{border-color:var(--accent)}
     <rect x="50" y="33" width="32" height="2.5" rx="1.2" fill="rgba(255,255,255,0.4)"/>
   </svg>
   <div class="badge">Beta</div>
+</div>
+
+<!-- Tab bar below header — only visible to billers -->
+<div id="mainTabBar" style="display:none;background:#fff;border-bottom:2px solid var(--border);position:sticky;top:64px;z-index:99">
+  <div style="max-width:600px;margin:0 auto;display:flex">
+    <button id="tabDining" onclick="switchMainTab('dining')" style="flex:1;padding:12px 8px;border:none;background:transparent;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;color:var(--accent);border-bottom:3px solid var(--accent);transition:all 0.15s">🍽️ Dining</button>
+    <button id="tabTravel" onclick="switchMainTab('travel')" style="flex:1;padding:12px 8px;border:none;background:transparent;font-family:inherit;font-size:14px;font-weight:700;cursor:pointer;color:var(--dim);border-bottom:3px solid transparent;transition:all 0.15s">✈️ Travel <span style="background:#E03B3B;color:#fff;font-size:9px;font-weight:800;padding:2px 5px;border-radius:20px;letter-spacing:0.5px;vertical-align:middle;margin-left:4px">NEW</span></button>
+  </div>
 </div>
 
 <!-- ══ Onboarding Modal ══ -->
@@ -265,17 +391,11 @@ select:focus{border-color:var(--accent)}
       <div style="display:flex;gap:14px;align-items:flex-start">
         <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#EBF9F4,#D6F3E8);border:1px solid rgba(0,179,122,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🔗</div>
         <div>
-          <div style="font-size:15px;font-weight:700;color:#0F1F3D;margin-bottom:2px">Send the link to your friends</div>
-          <div style="font-size:13px;color:#5A6A85;line-height:1.5">Friends select orders and pay — track it all in your dashboard</div>
+          <div style="font-size:15px;font-weight:700;color:#0F1F3D;margin-bottom:2px">Send the link</div>
+          <div style="font-size:13px;color:#5A6A85;line-height:1.5">Friends pay you directly — track it all in the dashboard</div>
         </div>
       </div>
 
-    </div>
-
-    <!-- Free-to-use banner -->
-    <div style="display:flex;gap:10px;align-items:center;background:linear-gradient(135deg,#EBF9F4,#D6F3E8);border:1px solid rgba(0,179,122,0.25);border-radius:14px;padding:14px 16px;margin-bottom:24px">
-      <div style="font-size:20px;flex-shrink:0">🎉</div>
-      <div style="font-size:13px;color:#0F1F3D;line-height:1.5"><strong>100% free to use</strong> — feel free to upload <strong>dining receipts</strong> and share with your friends!</div>
     </div>
 
     <!-- CTA -->
@@ -300,18 +420,28 @@ select:focus{border-color:var(--accent)}
 
 <!-- ══ S0: Setup ══ -->
 <div id="s0" class="screen active">
-  <div class="ptitle">New Biller Split</div>
+  <div class="ptitle">Dining Split</div>
   <div class="psub">The easiest way to split bills with friends.</div>
 
   <!-- Upload -->
   <div class="card mt16">
     <div class="slabel">Receipt</div>
-    <div style="display:flex;gap:10px;align-items:flex-start;background:#F4F6FA;border-radius:12px;padding:12px 14px;margin-bottom:14px">
-      <span style="font-size:16px;flex-shrink:0;line-height:1.4">📸</span>
-      <p style="margin:0;font-size:12px;color:#5A6A85;line-height:1.7">Make sure your photo is clear, flat, and straight so Splitz can read it properly. Photo is never stored — only the items are kept.</p>
-    </div>
+    <p style="font-size:12px;color:var(--mid);margin-bottom:14px;line-height:1.6">Your receipt photo is never stored. Only the itemized data is kept.</p>
     <label class="upload-lbl" for="fileInput">📷 Upload Receipt</label>
     <input type="file" id="fileInput" accept="image/*" style="display:none" onchange="handleFile(event)"/>
+  </div>
+
+  <!-- Split between -->
+  <div class="card">
+    <div class="slabel">Split Between</div>
+    <div class="counter">
+      <button class="cbtn" onclick="changeNum(-1)">−</button>
+      <div class="cnum">
+        <div class="cnumval" id="numDisplay">4</div>
+        <div class="cnumsub">people incl. you</div>
+      </div>
+      <button class="cbtn" onclick="changeNum(1)">+</button>
+    </div>
   </div>
 
   <!-- Payment — compact chip if saved, full form if not -->
@@ -330,14 +460,10 @@ select:focus{border-color:var(--accent)}
 
   <div id="gcashFullForm">
     <div class="card">
-      <div class="slabel">Payment Details</div>
+      <div class="slabel">GCash Payment Details</div>
       <div class="field">
         <label class="flabel">GCash Number</label>
-        <div style="position:relative">
-          <input type="password" id="gcashNum" placeholder="09XX XXX XXXX" inputmode="numeric" autocomplete="off" style="padding-right:48px"/>
-          <button type="button" id="gcashNumToggle" onclick="toggleGcashNum()" aria-label="Show or hide GCash number"
-            style="position:absolute;right:6px;top:50%;transform:translateY(-50%);width:38px;height:38px;display:flex;align-items:center;justify-content:center;background:none;border:none;cursor:pointer;color:var(--dim);font-size:18px;padding:0">👁️</button>
-        </div>
+        <input type="text" id="gcashNum" placeholder="09XX XXX XXXX"/>
       </div>
       <div class="field">
         <label class="flabel">Account Name</label>
@@ -346,12 +472,17 @@ select:focus{border-color:var(--accent)}
     </div>
   </div>
 
+  <!-- Dashboard shortcut -->
+  <button onclick="openDash()" style="width:100%;padding:14px;border-radius:12px;border:1.5px solid var(--border);background:#fff;color:var(--text);font-size:15px;font-weight:700;cursor:pointer;font-family:inherit;display:flex;align-items:center;justify-content:center;gap:8px;margin-bottom:4px">
+    <span style="font-size:18px">▦</span> Go to Dashboard
+  </button>
+
   <!-- AI loader (hidden) -->
   <div id="aiSection" style="display:none">
     <div class="card" style="text-align:center;padding:28px 18px">
       <div style="font-size:36px;margin-bottom:12px">🤖</div>
       <div style="font-size:16px;font-weight:800;margin-bottom:6px">Reading receipt…</div>
-      <div style="color:var(--mid);font-size:13px;margin-bottom:16px">Splitz is scanning &amp; itemizing your bill</div>
+      <div style="color:var(--mid);font-size:13px;margin-bottom:16px">AI is scanning &amp; itemizing your bill</div>
       <div class="ai-log" id="aiLog">Analyzing image…</div>
       <div class="dots">
         <div class="dot" style="animation-delay:0s"></div>
@@ -386,15 +517,6 @@ select:focus{border-color:var(--accent)}
         <div id="itemList"></div>
       </div>
       <div id="modeEqual" style="display:none">
-        <div class="slabel">Split Between</div>
-        <div class="counter" style="margin-bottom:14px">
-          <button class="cbtn" onclick="changeNum(-1)">−</button>
-          <div class="cnum">
-            <div class="cnumval" id="numDisplay">4</div>
-            <div class="cnumsub">people incl. you</div>
-          </div>
-          <button class="cbtn" onclick="changeNum(1)">+</button>
-        </div>
         <div class="eq-box">
           <div style="font-size:12px;color:var(--mid);margin-bottom:8px">Each person pays</div>
           <div class="eq-amt" id="eqAmt">—</div>
@@ -412,11 +534,8 @@ select:focus{border-color:var(--accent)}
     <div class="card">
       <div class="row" style="padding-top:0"><div style="color:var(--mid);font-size:14px">Subtotal</div><div style="font-size:14px;font-weight:600" id="subtotalEl">—</div></div>
       <div class="divider"></div>
-      <div class="row" id="svcRow"><div style="color:var(--mid);font-size:14px" id="svcLabel">Service Charge</div>
-        <input type="number" id="svcInput" inputmode="decimal" placeholder="0" onchange="editSvc(this.value)" onfocus="this.select()"
-          style="width:90px;font-size:14px;font-weight:700;color:var(--accent);background:var(--muted);border:1.5px solid var(--border);border-radius:8px;padding:6px 10px;outline:none;text-align:right;font-family:inherit"/>
-      </div>
-      <div class="divider" id="svcDivider"></div>
+      <div class="row"><div style="color:var(--mid);font-size:14px" id="svcLabel">Service Charge (10%)</div><div style="font-size:14px;font-weight:600" id="svcEl">—</div></div>
+      <div class="divider"></div>
       <div class="row" style="padding-bottom:0"><div style="font-weight:700;font-size:16px">Total</div><div style="font-size:28px;font-weight:900;color:var(--accent);letter-spacing:-1px" id="totalEl">—</div></div>
     </div>
 
@@ -429,19 +548,8 @@ select:focus{border-color:var(--accent)}
       </div>
     </div>
     <div id="generateBtnWrap">
-      <button class="btn btn-primary" onclick="showConfirmReceiptSheet()">✅ Confirm Receipt &amp; Generate Link</button>
-      <div class="note mt10">🔗 Link expires 10 days</div>
-    </div>
-
-    <!-- Confirm Receipt bottom sheet -->
-    <div id="confirmReceiptOverlay" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.45);z-index:1500" onclick="hideConfirmReceiptSheet()"></div>
-    <div id="confirmReceiptSheet" style="display:none;position:fixed;bottom:0;left:0;right:0;background:#fff;border-radius:20px 20px 0 0;padding:24px 20px calc(24px + env(safe-area-inset-bottom));z-index:1501;max-height:85vh;overflow-y:auto">
-      <div style="width:40px;height:4px;background:#E2E8F0;border-radius:2px;margin:0 auto 20px"></div>
-      <div style="font-size:18px;font-weight:800;color:#1A2340;margin-bottom:4px">Confirm &amp; Generate Link?</div>
-      <div style="font-size:13px;color:#5A6A85;margin-bottom:20px">Once confirmed, your bill link will be created and sent to your friends.</div>
-      <div id="confirmReceiptSummary" style="background:#F7F9FC;border-radius:12px;padding:16px;margin-bottom:20px;font-size:13px;color:#1A2340"></div>
-      <button class="btn btn-primary" style="margin-bottom:10px" onclick="hideConfirmReceiptSheet();generateAndShow()">✅ Confirm &amp; Generate Link</button>
-      <button class="btn" style="background:#F0F4FA;color:#5A6A85;font-weight:700" onclick="hideConfirmReceiptSheet()">Go Back &amp; Review</button>
+      <button class="btn btn-primary" onclick="generateAndShow()">Generate Link →</button>
+      <div class="note mt10">🔗 Link expires 7 days &nbsp;·&nbsp; 📸 Photo deleted in 3 days</div>
     </div>
 
     <!-- Link + dashboard — shown after Generate is tapped -->
@@ -521,8 +629,8 @@ select:focus{border-color:var(--accent)}
 
   <div class="card mt16">
     <label class="flabel">Your Name</label>
-    <input type="text" id="guestName" oninput="updateGuestCalc();saveSplitterProgress('pick');this.style.borderColor='';this.style.background='';"/>
-    <div id="savedNameHint" style="display:none"></div>
+    <input type="text" id="guestName" placeholder="e.g. Julius" oninput="updateGuestCalc()"/>
+    <div id="savedNameHint" style="display:none;font-size:11px;color:var(--accent);margin-top:6px;font-weight:600">✓ Name remembered · <span onclick="clearSavedName()" style="color:var(--dim);cursor:pointer;text-decoration:underline">Clear</span></div>
   </div>
 
   <!-- Who already paid -->
@@ -547,8 +655,8 @@ select:focus{border-color:var(--accent)}
         <div style="color:var(--mid);font-size:14px">Your subtotal <span style="font-size:11px;color:var(--dim)">(VAT incl.)</span></div>
         <div style="font-size:14px;font-weight:600" id="gSubEl">—</div>
       </div>
-      <div class="divider" id="gSvcDivider"></div>
-      <div class="row" id="gSvcRow">
+      <div class="divider"></div>
+      <div class="row">
         <div>
           <div style="color:var(--mid);font-size:14px">Service charge</div>
           <div style="font-size:10px;color:var(--dim);margin-top:1px">Proportional to your share</div>
@@ -571,7 +679,7 @@ select:focus{border-color:var(--accent)}
     </div>
   </div>
 
-  <button class="btn btn-primary" id="payBtn" onclick="goToPayment()">Pay to the biller →</button>
+  <button class="btn btn-primary" id="payBtn" disabled onclick="goToPayment()">Pay to the biller →</button>
 </div>
 
 <!-- ══ S5: Payment ══ -->
@@ -607,24 +715,13 @@ select:focus{border-color:var(--accent)}
     <div id="payNumSection" style="display:none">
       <span id="payGcashNum" style="display:none">—</span>
     </div>
-    <button id="copyNumBtn" onclick="copyPayNum()" style="width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,#00B37A,#009A67);color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;box-shadow:0 4px 16px rgba(0,179,122,0.2)">📋 Tap to Copy GCash Number</button>
-    <button onclick="openGcashApp()" style="width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,#0071CE,#005BB5);color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px;display:flex;align-items:center;justify-content:center;gap:8px;box-shadow:0 4px 16px rgba(0,113,206,0.3)">
-      <svg width="20" height="20" viewBox="0 0 40 40" fill="none" xmlns="http://www.w3.org/2000/svg"><rect width="40" height="40" rx="10" fill="rgba(255,255,255,0.2)"/><path d="M29 10 Q29 6 22 6 Q15 6 15 11 Q15 17 22 19 L28 21" fill="none" stroke="white" stroke-width="4.5" stroke-linecap="round"/><path d="M20 26 L26 27 Q33 29 33 34 Q33 39 26 39 Q19 39 19 34" fill="none" stroke="white" stroke-width="4.5" stroke-linecap="round" opacity="0.7"/></svg>
-      Open GCash App
-    </button>
+    <button id="copyNumBtn" onclick="copyPayNum()" style="width:100%;padding:15px;border-radius:12px;border:none;background:linear-gradient(135deg,#00B37A,#009A67);color:#fff;font-size:16px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:12px;box-shadow:0 4px 16px rgba(0,179,122,0.2)">📋 Tap to Copy GCash Number</button>
   </div>
 
-  <button class="btn" style="margin-bottom:12px;background:linear-gradient(135deg,#F59E0B,#D97706);color:#fff;box-shadow:0 4px 20px rgba(245,158,11,0.4);font-size:17px;letter-spacing:-0.2px" onclick="confirmSent()">💸 Done Sending? Confirm Here</button>
+  <button class="btn" style="margin-bottom:12px;background:linear-gradient(135deg,#00B37A,#008F60);color:#fff;box-shadow:0 4px 16px rgba(0,179,122,0.3)" onclick="confirmSent()">✅ Done Sending? Confirm Here</button>
 
   <div class="card card-yellow">
     <div style="font-size:12px;color:var(--yellow);line-height:1.6">⚠️ <span id="payWarnHost">the biller</span> will confirm once they receive your payment. You'll show as <strong>Pending</strong> until then.</div>
-  </div>
-
-  <div class="card" style="background:var(--muted);border-style:dashed">
-    <div style="font-size:12px;color:var(--mid);line-height:1.7">
-      🛡️ <strong>Before you send:</strong> Make sure the account name in your GCash confirmation matches <strong id="verifyHost">the biller's name</strong> shown above. If it doesn't match or you're unsure, message the biller to verify first.
-      <div style="margin-top:8px;color:var(--dim);font-size:11px">Splitz only shares payment details — we don't process payments and aren't responsible for transfers sent to the wrong account.</div>
-    </div>
   </div>
 </div>
 
@@ -641,12 +738,6 @@ select:focus{border-color:var(--accent)}
     <div style="font-size:48px;margin-bottom:12px">🎉</div>
     <div style="font-size:22px;font-weight:800;margin-bottom:6px">Payment Sent!</div>
     <div style="color:var(--mid);font-size:14px" id="sentMsg">Waiting for the biller to confirm your payment</div>
-    <div style="margin-top:40px;padding-top:24px;border-top:1px solid #EAECF0">
-      <div style="font-size:12px;color:#9AAABE;margin-bottom:12px">Got a bill to split?</div>
-      <a href="https://splitzbill.app" style="display:inline-flex;align-items:center;gap:8px;padding:12px 24px;border-radius:14px;background:linear-gradient(135deg,#00B37A,#008F60);color:#fff;font-size:14px;font-weight:800;text-decoration:none;box-shadow:0 4px 16px rgba(0,179,122,0.25);font-family:inherit">
-        🧾 Split your own bill →
-      </a>
-    </div>
   </div>
 
   <!-- Session tabs as vertical list -->
@@ -654,10 +745,6 @@ select:focus{border-color:var(--accent)}
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
       <div class="slabel" style="margin-bottom:0">Your Bills <span id="sessionCount" style="color:var(--accent)"></span></div>
       <button class="btn btn-primary" style="width:auto;padding:6px 14px;font-size:12px" onclick="startNewReceipt()">+ New Receipt</button>
-    </div>
-    <div style="display:flex;gap:8px;align-items:flex-start;background:var(--muted);border:1px solid var(--border);border-radius:10px;padding:10px 12px;margin-bottom:12px">
-      <div style="font-size:14px;flex-shrink:0">🔒</div>
-      <div style="font-size:11px;color:var(--mid);line-height:1.5">For your security, bills are kept here for <strong>10 days only</strong>, then automatically deleted.</div>
     </div>
     <div id="sessionTabs"></div>
   </div>
@@ -730,9 +817,9 @@ select:focus{border-color:var(--accent)}
       <div class="slabel">Who's Paid</div>
       <div id="payList"></div>
     </div>
-    <div style="display:flex;gap:8px;align-items:flex-start;background:var(--muted);border-radius:12px;padding:12px 14px;margin-top:4px">
-      <span style="font-size:14px;flex-shrink:0;line-height:1.5">💡</span>
-      <div style="font-size:11px;color:var(--mid);line-height:1.6">Your bills are saved on this browser only — use the same browser and PIN to view them. Viewing across devices is coming soon!</div>
+    <div style="display:flex;gap:10px">
+      <button class="btn btn-ghost" style="flex:1" onclick="goTo(4)">👤 Guest View</button>
+      <button class="btn btn-primary" style="flex:1" onclick="addGuest()">+ Add Guest</button>
     </div>
   </div>
 </div>
@@ -741,7 +828,7 @@ select:focus{border-color:var(--accent)}
 <div id="s7" class="screen">
   <div style="text-align:center;padding:48px 0 24px">
     <div style="width:64px;height:64px;border-radius:18px;background:var(--abg);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">🔐</div>
-    <div class="ptitle" style="padding-top:0">Biller Access</div>
+    <div class="ptitle" style="padding-top:0">Dashboard Access</div>
     <div class="psub" id="pinSub">Enter your 4-digit PIN to open the dashboard</div>
   </div>
 
@@ -778,8 +865,9 @@ select:focus{border-color:var(--accent)}
 
 <!-- NAV -->
 <div class="nav" id="navBar">
-  <button class="nbtn" onclick="goTo(0)"><div class="nic active" id="n0">⊕</div><div class="nlbl active" id="nl0">New</div></button>
+  <button class="nbtn" onclick="switchMainTab('dining')"><div class="nic active" id="n0">⊕</div><div class="nlbl active" id="nl0">Dining</div></button>
   <button class="nbtn" onclick="openDash()"><div class="nic" id="n6">▦</div><div class="nlbl" id="nl6">Dashboard</div></button>
+  <button class="nbtn" onclick="goToTravel()"><div class="nic" id="nT">✈️</div><div class="nlbl" id="nlT">Travel</div></button>
 </div>
 
 <script>
@@ -791,102 +879,29 @@ var currentBillerId = null; // UUID of biller row
 var currentBillId   = null; // UUID of active bill row
 var realtimeChannel = null; // Supabase realtime channel
 
-// ─── Error logging ────────────────────────────────────────────────────────────
-// Central place to surface errors that were previously swallowed silently.
-function logErr(ctx, e){
-  try{ console.error('[Splitz] ' + ctx + ':', e); }catch(_){}
-}
-
-// ─── fetch with retry + exponential backoff ───────────────────────────────────
-// fetch() only rejects on network failures (not HTTP error statuses), so retrying
-// here specifically targets flaky connections without masking 4xx/5xx responses.
-function fetchRetry(url, opts, tries){
-  tries = (tries == null) ? 3 : tries;
-  return fetch(url, opts).catch(function(err){
-    if(tries <= 1){ logErr('Network request failed ' + url, err); throw err; }
-    var waitMs = (4 - tries) * 600; // 600ms, 1200ms, …
-    return new Promise(function(res){ setTimeout(res, waitMs); })
-      .then(function(){ return fetchRetry(url, opts, tries - 1); });
-  });
-}
-
-// ─── Claude OCR call with transient-error retry ───────────────────────────────
-// The proxy returns HTTP 200 even when Anthropic replies with an error in the
-// body (e.g. {"error":{"type":"overloaded_error"}}), so fetchRetry's network-only
-// retry never catches it. Anthropic's API gets overloaded under peak load and
-// returns 529 / overloaded_error — that's transient, not a bad photo. Retry those
-// (and generic api_error / 5xx-style) a few times with exponential backoff before
-// surfacing failure to the user. onRetry lets the caller update the status text.
-function callClaude(body, onRetry, tries){
-  tries = (tries == null) ? 4 : tries;
-  var TRANSIENT = { overloaded_error:1, api_error:1, rate_limit_error:1, timeout_error:1 };
-  return fetchRetry('/api/claude', {
-    method:'POST', headers:{'Content-Type':'application/json'}, body:body
-  }).then(function(r){ return r.json(); }).then(function(data){
-    var errType = data && data.error && data.error.type;
-    if(errType && TRANSIENT[errType] && tries > 1){
-      var attempt = 5 - tries;          // 1, 2, 3
-      var waitMs  = Math.min(1000 * Math.pow(2, attempt - 1), 8000); // 1s, 2s, 4s
-      if(typeof onRetry === 'function') onRetry(attempt, errType);
-      return new Promise(function(res){ setTimeout(res, waitMs); })
-        .then(function(){ return callClaude(body, onRetry, tries - 1); });
-    }
-    return data;
-  });
-}
-
 // ─── Supabase helpers ─────────────────────────────────────────────────────────
-// Writes use Prefer:return=minimal so they never need SELECT on the row. Row IDs
-// are generated client-side (uuid()) so we don't depend on the server echoing the
-// inserted row back. This lets us lock down direct SELECT on bills/billers — the
-// public anon key can no longer bulk-dump everyone's GCash details. Reads of
-// bills go through scoped RPCs (supaRpc); payments stay direct (needed for
-// realtime).
-function uuid(){
-  try{ if(window.crypto && crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
-  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
-    var r;
-    try{ r = crypto.getRandomValues(new Uint8Array(1))[0] % 16; }catch(e){ r = Math.floor(Math.random()*16); }
-    var v = c === 'x' ? r : (r & 0x3 | 0x8);
-    return v.toString(16);
-  });
-}
-
 function supa(path, method, body){
-  return fetchRetry(SUPA_URL + '/rest/v1/' + path, {
+  return fetch(SUPA_URL + '/rest/v1/' + path, {
     method: method || 'GET',
-    headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=minimal' }),
+    headers: Object.assign({}, supaHeaders, { 'Prefer': method==='POST' ? 'return=representation' : 'return=representation' }),
     body: body ? JSON.stringify(body) : undefined
-  }).then(function(r){ return r.text(); })
-    .then(function(t){ return t ? JSON.parse(t) : null; })
-    .catch(function(e){ logErr('Supabase ' + (method||'GET') + ' ' + path, e); return null; });
+  }).then(function(r){ return r.json(); });
 }
 
 function supaGet(path){ return supa(path, 'GET'); }
 function supaPost(path, body){ return supa(path, 'POST', body); }
-function supaRpc(fn, args){
-  return fetchRetry(SUPA_URL + '/rest/v1/rpc/' + fn, {
-    method: 'POST',
-    headers: supaHeaders,
-    body: JSON.stringify(args || {})
-  }).then(function(r){ return r.text(); })
-    .then(function(t){ return t ? JSON.parse(t) : null; })
-    .catch(function(e){ logErr('Supabase RPC ' + fn, e); return null; });
-}
 function supaPatch(path, body){
-  return fetchRetry(SUPA_URL + '/rest/v1/' + path, {
+  return fetch(SUPA_URL + '/rest/v1/' + path, {
     method: 'PATCH',
-    headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=minimal' }),
+    headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=representation' }),
     body: JSON.stringify(body)
-  }).then(function(r){ return r.ok; })
-    .catch(function(e){ logErr('Supabase PATCH ' + path, e); return false; });
+  }).then(function(r){ return r.json(); });
 }
 function supaDelete(path){
-  return fetchRetry(SUPA_URL + '/rest/v1/' + path, {
+  return fetch(SUPA_URL + '/rest/v1/' + path, {
     method: 'DELETE',
     headers: supaHeaders
-  }).then(function(r){ return r.ok; })
-    .catch(function(e){ logErr('Supabase DELETE ' + path, e); return false; });
+  }).then(function(r){ return r.ok; });
 }
 
 // ─── Biller profile ───────────────────────────────────────────────────────────
@@ -895,10 +910,8 @@ function saveBillerToSupabase(cb){
   if(currentBillerId){
     supaPatch('billers?id=eq.'+currentBillerId, body).then(function(){ if(cb) cb(); });
   } else {
-    // Generate the id client-side so we don't need the server to echo the row back.
-    currentBillerId = uuid();
-    body.id = currentBillerId;
-    supaPost('billers', body).then(function(){
+    supaPost('billers', body).then(function(rows){
+      if(rows && rows[0]) currentBillerId = rows[0].id;
       try{ localStorage.setItem('splitz_biller_id', currentBillerId); }catch(e){}
       if(cb) cb();
     });
@@ -909,11 +922,13 @@ function loadBillerFromSupabase(cb){
   var saved = null;
   try{ saved = localStorage.getItem('splitz_biller_id'); }catch(e){}
   if(!saved){ if(cb) cb(); return; }
-  // We keep currentBillerId so existing bills/links still work, but we do NOT
-  // pre-fill the form or memory (biller enters fresh details each session). No
-  // server read needed — direct SELECT on billers is locked down for privacy.
   currentBillerId = saved;
-  if(cb) cb();
+  supaGet('billers?id=eq.'+saved+'&select=*').then(function(rows){
+    // Note: we keep currentBillerId so existing bills/links still work,
+    // but we do NOT pre-fill the form or memory. The biller enters
+    // fresh payment details each session for privacy.
+    if(cb) cb();
+  });
 }
 
 // ─── Bill (session) ───────────────────────────────────────────────────────────
@@ -927,56 +942,49 @@ function saveBillToSupabase(cb){
       payment_method: 'GCash'
     });
   }
-  var slug = genSlug();
-  var newId = uuid();
+  var slug = 'bill-'+Math.random().toString(36).slice(2,10);
   var body = {
-    id:         newId,
     biller_id:  currentBillerId,
-    label: sanitizeName((el('billLabel') && el('billLabel').value) || '') || 'Bill #'+(sessions.length+1),
+    label: (el('billLabel') && el('billLabel').value.trim()) ? el('billLabel').value.trim() : 'Bill #'+(sessions.length+1),
     split_mode: splitMode,
     num_people: numPeople,
     svc:        svcFromReceipt,
-    items:      JSON.stringify(sanitizeItems(items)),
-    slug:       slug,
-    // Bake the payment destination into the bill at creation. A DB trigger makes
-    // these immutable so nobody can redirect payments after the link is shared.
-    gcash_number: gcashNum,
-    gcash_name:   gcashName
+    items:      JSON.stringify(items),
+    slug:       slug
   };
-  supaPost('bills', body).then(function(){
-    currentBillId = newId;
-    // Add to local sessions array too
-    sessions.push({
-      id:        currentBillId,
-      supaId:    currentBillId,
-      label:     body.label,
-      date:      new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric'})+'  · '+new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),
-      items:     items.slice(),
-      svc:       svcFromReceipt,
-      numPeople: numPeople,
-      splitMode: splitMode,
-      payments:  [],
-      slug:      slug,
-      gcashNumber: gcashNum,
-      gcashName:   gcashName
-    });
-    activeSession = sessions.length-1;
-    try{ localStorage.setItem('splitz_bill_ids', JSON.stringify(sessions.map(function(s){return s.supaId;}))); }catch(e){}
-    if(cb) cb(slug);
+  supaPost('bills', body).then(function(rows){
+    if(rows && rows[0]){
+      currentBillId = rows[0].id;
+      // Add to local sessions array too
+      sessions.push({
+        id:        currentBillId,
+        supaId:    currentBillId,
+        label:     body.label,
+        date:      new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric'})+'  · '+new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),
+        items:     items.slice(),
+        svc:       svcFromReceipt,
+        numPeople: numPeople,
+        splitMode: splitMode,
+        payments:  [],
+        slug:      slug
+      });
+      activeSession = sessions.length-1;
+      try{ localStorage.setItem('splitz_bill_ids', JSON.stringify(sessions.map(function(s){return s.supaId;}))); }catch(e){}
+    }
+    if(cb) cb(rows && rows[0] ? rows[0].slug : null);
   });
 }
 
 function updateBillInSupabase(){
   if(!currentBillId) return;
-  // Note: gcash_number/gcash_name are intentionally NOT updated here — they are
-  // immutable after the bill is created (enforced by a DB trigger) so payments
-  // can never be redirected once the link has been shared.
   supaPatch('bills?id=eq.'+currentBillId, {
-    label:      curSess() ? curSess().label : undefined,
-    split_mode: splitMode,
-    num_people: numPeople,
-    svc:        svcFromReceipt,
-    items:      JSON.stringify(sanitizeItems(items))
+    label:        curSess() ? curSess().label : undefined,
+    split_mode:   splitMode,
+    num_people:   numPeople,
+    svc:          svcFromReceipt,
+    items:        JSON.stringify(items),
+    gcash_number: gcashNum,
+    gcash_name:   gcashName
   });
 }
 
@@ -984,7 +992,7 @@ function loadBillsFromSupabase(cb){
   var savedIds = null;
   try{ savedIds = JSON.parse(localStorage.getItem('splitz_bill_ids')||'null'); }catch(e){}
   if(!savedIds || !savedIds.length){ if(cb) cb(); return; }
-  supaRpc('get_bills_by_ids', { p_ids: savedIds }).then(function(bills){
+  supaGet('bills?id=in.('+savedIds.join(',')+')'+'&order=created_at.asc&select=*').then(function(bills){
     if(!bills || !bills.length){ if(cb) cb(); return; }
     var promises = bills.map(function(bill){
       return supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
@@ -995,7 +1003,7 @@ function loadBillsFromSupabase(cb){
       sessions = results.map(function(r){
         var b = r.bill;
         var parsedItems = [];
-        try{ parsedItems = typeof b.items === 'string' ? JSON.parse(b.items) : (b.items||[]); }catch(e){ logErr('parse bill items '+b.id, e); }
+        try{ parsedItems = typeof b.items === 'string' ? JSON.parse(b.items) : (b.items||[]); }catch(e){}
         return {
           id:        b.id, supaId: b.id,
           label:     b.label||'Bill #1',
@@ -1025,36 +1033,38 @@ function loadBillsFromSupabase(cb){
 
 // ─── Load bill by slug (splitter opening link) ────────────────────────────────
 function loadBillBySlug(slug, cb){
-  // Scoped RPC returns the bill with GCash already coalesced from the biller
-  // record, so we no longer read the billers table directly.
-  supaRpc('get_bill_by_slug', { p_slug: slug }).then(function(bills){
+  supaGet('bills?slug=eq.'+slug+'&select=*').then(function(bills){
     if(!bills || !bills.length){ if(cb) cb(null); return; }
     var bill = bills[0];
-    supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
-      var parsedItems = [];
-      try{ parsedItems = typeof bill.items === 'string' ? JSON.parse(bill.items) : (bill.items||[]); }catch(e){ logErr('parse bill items '+bill.id, e); }
-      items = parsedItems;
-      svcFromReceipt = bill.svc;
-      numPeople = bill.num_people;
-      splitMode = bill.split_mode;
-      gcashNum = bill.gcash_number || '';
-      gcashName = bill.gcash_name || '';
-      paymentMethod = 'GCash';
-      qrDataUrl = '';
-      currentBillId = bill.id;
-      // Build local session
-      sessions = [{
-        id: bill.id, supaId: bill.id,
-        label: bill.label, date: bill.created_at,
-        items: parsedItems, svc: bill.svc,
-        numPeople: bill.num_people, splitMode: bill.split_mode,
-        slug: bill.slug,
-        payments: (pmts||[]).map(function(p){
-          return { id:p.id, name:p.splitter_name, items:p.item_ids||[], equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed };
-        })
-      }];
-      activeSession = 0;
-      if(cb) cb(bill);
+    supaGet('billers?id=eq.'+bill.biller_id+'&select=*').then(function(billers){
+      var biller = billers && billers[0] ? billers[0] : {};
+      supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
+        var parsedItems = [];
+        try{ parsedItems = typeof bill.items === 'string' ? JSON.parse(bill.items) : (bill.items||[]); }catch(e){}
+        items = parsedItems;
+        svcFromReceipt = bill.svc;
+        numPeople = bill.num_people;
+        splitMode = bill.split_mode;
+        // Use bill-level gcash if available, fall back to biller record
+        gcashNum = bill.gcash_number || biller.account_number || '';
+        gcashName = bill.gcash_name || biller.account_name || '';
+        paymentMethod = 'GCash';
+        qrDataUrl = '';
+        currentBillId = bill.id;
+        // Build local session
+        sessions = [{
+          id: bill.id, supaId: bill.id,
+          label: bill.label, date: bill.created_at,
+          items: parsedItems, svc: bill.svc,
+          numPeople: bill.num_people, splitMode: bill.split_mode,
+          slug: bill.slug,
+          payments: (pmts||[]).map(function(p){
+            return { id:p.id, name:p.splitter_name, items:p.item_ids||[], equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed };
+          })
+        }];
+        activeSession = 0;
+        if(cb) cb(bill);
+      });
     });
   });
 }
@@ -1062,19 +1072,17 @@ function loadBillBySlug(slug, cb){
 // ─── Payment (splitter confirms) ──────────────────────────────────────────────
 function savePaymentToSupabase(payment, cb){
   if(!currentBillId){ if(cb) cb(); return; }
-  var safeName = sanitizeName(payment.name);
-  if(!safeName){ showToast('Please enter a valid name'); if(cb) cb(); return; }
-  var newId = uuid();
   supaPost('payments', {
-    id:            newId,
     bill_id:       currentBillId,
-    splitter_name: safeName,
-    item_ids:      Array.isArray(payment.items) ? payment.items.map(Number).filter(function(n){return !isNaN(n);}) : [],
+    splitter_name: payment.name,
+    item_ids:      payment.items||[],
     equal_split:   payment.equalSplit||false,
-    amount:        sanitizeAmount(payment.amount),
+    amount:        payment.amount||0,
     confirmed:     false
-  }).then(function(){
-    if(curSess()) curSess().payments.push(Object.assign({}, payment, { id: newId }));
+  }).then(function(rows){
+    if(rows && rows[0] && curSess()){
+      curSess().payments.push(Object.assign({}, payment, { id: rows[0].id }));
+    }
     if(cb) cb();
   });
 }
@@ -1111,7 +1119,7 @@ function subscribeToPayments(billId){
           showNewPaymentNotification(name || 'Someone');
         });
       }
-    }catch(ex){ logErr('realtime message', ex); }
+    }catch(ex){}
   };
   ws.onclose = function(){
     if(ws._hb) clearInterval(ws._hb);
@@ -1135,11 +1143,7 @@ function refreshDashFromServer(cb){
       else existing.push(mapped);
     });
     var s6 = el('s6');
-    // Don't repaint the dashboard while the "Payment Sent" confirmation is on
-    // screen (e.g. biller test-paying via Guest View) — it would bleed the
-    // dashboard in under the confirmation message.
-    var sentVisible = el('sentHead') && el('sentHead').style.display !== 'none';
-    if(s6 && s6.classList.contains('active') && !sentVisible) renderDash();
+    if(s6 && s6.classList.contains('active')) renderDash();
     if(cb) cb(pmts && pmts[pmts.length-1] ? pmts[pmts.length-1].splitter_name : null);
   });
 }
@@ -1175,6 +1179,8 @@ function showNewPaymentNotification(name){
 }
 
 
+var SVC        = 0.10;
+var MAX_SESSIONS = 7;
 var numPeople  = 4;
 var items      = [];
 var svcFromReceipt = null;
@@ -1185,7 +1191,6 @@ var gcashName  = '';
 var paymentMethod = 'GCash';
 var qrDataUrl  = ''; // base64 of uploaded QR image
 var guestAmountToPay = 0;
-var splitterSlug = ''; // set when a splitter opens a ?b= link; keys saved progress
 var pinBuffer  = '';
 var pinMode    = 'verify'; // 'set' | 'confirm' | 'verify'
 var pinTemp    = '';       // holds first entry during set flow
@@ -1219,78 +1224,17 @@ function fmt(n){ var num=Number(n); if(isNaN(num)) return '₱0.00'; return '₱
 function el(id){ return document.getElementById(id); }
 function esc(s){ return String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
 
-// ─── Bill links ───────────────────────────────────────────────────────────────
-var APP_BASE_URL = 'https://splitzbill.app';
-// Short 6-char base36 slug, e.g. splitzbill.app/?b=k3p9za
-function genSlug(){
-  var c = 'abcdefghijklmnopqrstuvwxyz0123456789', s = '';
-  for(var i=0;i<6;i++) s += c.charAt(Math.floor(Math.random()*36));
-  return s;
-}
-function billUrl(slug){ return APP_BASE_URL + '/?b=' + slug; }
-
-// ─── Input validation / sanitization ──────────────────────────────────────────
-// Validate untrusted values before they are persisted to Supabase.
-function sanitizeName(s){
-  return String(s == null ? '' : s).replace(/[<>]/g,'').trim().slice(0, 60);
-}
-function sanitizeAmount(n){
-  var num = Number(n);
-  if(!isFinite(num) || isNaN(num) || num < 0) return 0;
-  // Cap absurd values and round to 2 decimals to avoid float drift.
-  return Math.round(Math.min(num, 10000000) * 100) / 100;
-}
-function sanitizeItems(arr){
-  if(!Array.isArray(arr)) return [];
-  return arr.slice(0, 200).map(function(it){
-    return {
-      id:    Number(it && it.id) || 0,
-      name:  sanitizeName(it && it.name).slice(0, 80) || 'Item',
-      price: sanitizeAmount(it && it.price)
-    };
-  });
-}
-
 function getSubtotal(){ return items.reduce(function(s,i){return s+i.price;},0); }
 function getSvc(){
-  // Only charge service if the receipt actually had one. No synthetic 10%.
-  return svcFromReceipt !== null ? svcFromReceipt : 0;
+  if(svcFromReceipt !== null) return svcFromReceipt;
+  return Math.round(getSubtotal() * SVC);
 }
 function getTotal(){ return getSubtotal() + getSvc(); }
 function getPerPerson(){ return numPeople > 0 ? Math.ceil(getTotal() / numPeople) : 0; }
 
 // ─── Navigation ───────────────────────────────────────────────────────────────
 // ─── PIN ──────────────────────────────────────────────────────────────────────
-// Legacy hash — kept ONLY to verify PINs created before the SHA-256 upgrade.
-function hashPinLegacy(p){ var h=0; for(var i=0;i<p.length;i++){h=(h*31+p.charCodeAt(i))>>>0;} return h.toString(36); }
-
-// Secure PIN hash using SHA-256 via the Web Crypto API. Returns a Promise<string>.
-function hashPin(p){
-  if(!(window.crypto && crypto.subtle)){
-    // Insecure/older context — fall back to legacy so the app still functions.
-    return Promise.resolve(hashPinLegacy(p));
-  }
-  var data = new TextEncoder().encode('splitz_pin_v2:' + p);
-  return crypto.subtle.digest('SHA-256', data).then(function(buf){
-    var bytes = Array.prototype.map.call(new Uint8Array(buf), function(b){
-      return ('0' + b.toString(16)).slice(-2);
-    });
-    return 'v2:' + bytes.join('');
-  });
-}
-
-// Verify an entered PIN against the stored hash, migrating legacy hashes to v2.
-function verifyPin(entered, saved){
-  return hashPin(entered).then(function(h){
-    if(h === saved) return true;
-    // Legacy fallback: stored hash predates the "v2:" prefix.
-    if(saved && saved.indexOf('v2:') !== 0 && hashPinLegacy(entered) === saved){
-      try{ localStorage.setItem('splitsies_pin', h); }catch(e){ logErr('migrate pin', e); }
-      return true;
-    }
-    return false;
-  });
-}
+function hashPin(p){ var h=0; for(var i=0;i<p.length;i++){h=(h*31+p.charCodeAt(i))>>>0;} return h.toString(36); }
 
 function getSavedPin(){ try{ return localStorage.getItem('splitsies_pin')||''; }catch(e){ return ''; } }
 
@@ -1361,9 +1305,7 @@ function checkPin(){
     el('pinSub').style.color = '';
   } else if(pinMode==='confirm'){
     if(pinBuffer===pinTemp){
-      hashPin(pinBuffer).then(function(h){
-        try{ localStorage.setItem('splitsies_pin', h); }catch(e){ logErr('save pin', e); }
-      });
+      try{ localStorage.setItem('splitsies_pin', hashPin(pinBuffer)); }catch(e){}
       pinUnlocked = true;
       try{ sessionStorage.setItem('splitz_pin_unlocked','1'); }catch(e){}
       el('pinSub').textContent = '✓ PIN saved!';
@@ -1381,15 +1323,14 @@ function checkPin(){
   } else {
     // verify mode
     var saved = getSavedPin();
-    verifyPin(pinBuffer, saved).then(function(ok){
-      if(ok){
-        pinUnlocked = true;
-        try{ sessionStorage.setItem('splitz_pin_unlocked','1'); }catch(e){}
-        goTo(6);
-      } else {
-        shakeAndReset('Wrong PIN — try again');
-      }
-    });
+    if(hashPin(pinBuffer)===saved){
+      pinUnlocked = true;
+      try{ sessionStorage.setItem('splitz_pin_unlocked','1'); }catch(e){}
+      el('mainTabBar').style.display = 'block';
+      goTo(6);
+    } else {
+      shakeAndReset('Wrong PIN — try again');
+    }
   }
 }
 
@@ -1464,14 +1405,6 @@ function showGcashChip(num, name, method){
   // Never auto-show saved chip — biller must enter details each session
 }
 
-function toggleGcashNum(){
-  var inp = el('gcashNum'), btn = el('gcashNumToggle');
-  if(!inp) return;
-  var hidden = inp.type === 'password';
-  inp.type = hidden ? 'text' : 'password';
-  if(btn) btn.textContent = hidden ? '🙈' : '👁️';
-}
-
 function editGcash(){
   el('gcashSavedChip').style.display = 'none';
   el('gcashFullForm').style.display  = 'block';
@@ -1516,20 +1449,35 @@ function showSplitterOnboard(){
 }
 
 
-// ─── Biller mode ──────────────────────────────────────────────────────────────
-// Splitz is now public — everyone who visits directly is a biller.
-// billerMode is set to false only for splitters arriving via a ?bill= link.
-var billerMode = true;
+// ─── Invite gate ──────────────────────────────────────────────────────────────
+var billerMode  = false;       // true = biller (passed code), false = splitter only
+
+function initInviteGate(){
+  try{ sessionStorage.setItem('splitsies_biller','1'); }catch(e){}
+  billerMode = true;
+  showBillerUI();
+}
 
 function showBillerUI(){
-  el('navBar').style.display = 'flex';
-  goTo(0);
-  initOnboard();
+  document.body.setAttribute('data-mode','dining');
+  el('navBar').style.display = 'none';
+  el('mainTabBar').style.display = 'block';
+  if(window._pendingTab === 'travel'){
+    window._pendingTab = null;
+    // Go to travel tab but skip modal on first login
+    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+    el('tHome').classList.add('active');
+    window.scrollTo(0,0);
+    updateNav('T');
+    loadMyTrips();
+    // Don't show travel modal here — only on tab switch
+  } else {
+    goTo(0);
+    // Don't show dining modal on first login — only on tab switch
+  }
 }
 
-function lockBillerUI(){
-  el('navBar').style.display = 'none';
-}
+// Intercept nav to protect biller screens
 
 function showToast(msg, type){
   var existing = document.getElementById('splitsies-toast');
@@ -1553,21 +1501,15 @@ function closeOnboard(){
   if(!m) return;
   m.style.animation = 'fadeOut 0.2s ease forwards';
   setTimeout(function(){ m.style.display='none'; }, 200);
-  try{ localStorage.setItem('splitsies_onboarded','1'); }catch(e){}
 }
 
 function initOnboard(){
-  try{
-    var seen = localStorage.getItem('splitsies_onboarded');
-    if(seen){
-      el('onboardModal').style.display='none';
-    } else {
-      el('onboardModal').style.display='flex';
-      el('onboardModal').addEventListener('click', function(e){
-        if(e.target===el('onboardModal')) closeOnboard();
-      });
-    }
-  }catch(e){ el('onboardModal').style.display='none'; }
+  // Always show dining modal when entering dining tab
+  var m = el('onboardModal');
+  if(!m) return;
+  m.style.animation = '';
+  m.style.display='flex';
+  m.onclick = function(e){ if(e.target===m) closeOnboard(); };
 }
 
 
@@ -1652,7 +1594,7 @@ function deleteBill(){
   var hasPaid = sess.payments && sess.payments.length > 0;
   var msg     = hasPaid
     ? sess.payments.length + ' splitter' + (sess.payments.length > 1 ? 's have' : ' has') + ' already paid for this bill. Are you sure you want to delete it? This cannot be undone.'
-    : 'Delete "' + esc(label) + '"? This cannot be undone.';
+    : 'Delete "' + label + '"? This cannot be undone.';
 
   showDeleteConfirm(msg, function(){
     var supaId = sess.supaId;
@@ -1693,47 +1635,14 @@ function showDeleteConfirm(msg, onConfirm){
 
 // ─── Guest name auto-save ─────────────────────────────────────────────────────
 function loadSavedGuestName(){
-  // Name is intentionally not remembered — splitter always types fresh.
-}
-
-function saveGuestName(name){
-  // Saving disabled — name is cleared on every visit.
-}
-
-// ─── Splitter progress (survives the GCash app round-trip) ────────────────────
-// When a splitter taps "Open GCash App", the in-app browser (Messenger/Telegram)
-// is backgrounded and usually reloads the page fresh on return — wiping the name,
-// picked items and which screen they were on. We snapshot that progress to
-// localStorage keyed by the bill slug and restore it on the next load so they
-// land right back where they left off instead of redoing everything.
-function splitterProgressKey(){ return splitterSlug ? 'splitz_progress_'+splitterSlug : ''; }
-
-function saveSplitterProgress(stage){
-  if(billerMode || !splitterSlug) return;
   try{
-    var nameEl = el('guestName');
-    var name = nameEl ? (nameEl.value||'').trim() : '';
-    var pickedIds = items.filter(function(it){return picked[it.id];}).map(function(it){return it.id;});
-    localStorage.setItem(splitterProgressKey(), JSON.stringify({
-      name: name, picked: pickedIds, stage: stage||'pick', ts: Date.now()
-    }));
+    var n = localStorage.getItem('splitsies_guestname');
+    if(n){ el('guestName').value=n; el('savedNameHint').style.display='block'; updateGuestCalc(); }
   }catch(e){}
 }
 
-function clearSplitterProgress(){
-  try{ if(splitterSlug) localStorage.removeItem(splitterProgressKey()); }catch(e){}
-}
-
-function restoreSplitterProgress(){
-  if(!splitterSlug) return null;
-  try{
-    var raw = localStorage.getItem(splitterProgressKey());
-    if(!raw) return null;
-    var p = JSON.parse(raw);
-    // Expire after 12h so a stale visit doesn't silently prefill old selections.
-    if(!p || !p.ts || (Date.now()-p.ts) > 12*60*60*1000){ clearSplitterProgress(); return null; }
-    return p;
-  }catch(e){ return null; }
+function saveGuestName(name){
+  try{ localStorage.setItem('splitsies_guestname', name); }catch(e){}
 }
 
 function clearSavedName(){
@@ -1791,13 +1700,12 @@ function runAI(file){
       stream:false,
       messages:[{role:'user',content:[
         {type:'image',source:{type:'base64',media_type:file.type||'image/jpeg',data:b64}},
-        {type:'text',text:'Look at this receipt image and extract all food and drink items with their prices.\n\nRules:\n- Extract every line item (food/drinks only) into "items"\n- Use the unit price per item (not the line total if qty > 1)\n- Expand abbreviations to full names\n- Do NOT put totals, subtotals, VAT/tax lines, or gross sales into "items"\n\nSERVICE CHARGE (important): Look carefully for a service charge line — it may be labeled "Service Charge", "Svc Chg", "Svc", "Service Fee", "SC", or a percentage like "10% Service". The amount may be in a separate/misaligned column. If one exists, put its peso AMOUNT (not the percentage) in "serviceCharge". If there is genuinely none, use null. Note the row label and its amount may not line up horizontally — match by reading order.\n\nYou MUST respond with ONLY this JSON format, nothing else, no markdown:\n{"items":[{"name":"Item Name","unitPrice":100,"qty":1}],"serviceCharge":null}\n\nIf you cannot read the receipt, still return: {"items":[],"serviceCharge":null}'}
+        {type:'text',text:'Look at this receipt image and extract all food and drink items with their prices.\n\nRules:\n- Extract every line item (food/drinks only)\n- Use the unit price per item (not total if qty > 1)\n- Expand abbreviations to full names\n- Skip: totals, subtotals, VAT lines, gross sales, service charge lines\n- If you see a service charge amount, extract it separately\n\nYou MUST respond with ONLY this JSON format, nothing else, no markdown:\n{"items":[{"name":"Item Name","unitPrice":100,"qty":1}],"serviceCharge":null}\n\nIf you cannot read the receipt, still return: {"items":[],"serviceCharge":null}'}
       ]}]
     });
 
-    callClaude(body, function(attempt){
-      el('aiLog').textContent = 'Splitz is in high demand right now — retrying (' + attempt + '/3)…';
-    })
+    fetch('/api/claude',{method:'POST',headers:{'Content-Type':'application/json'},body:body})
+    .then(function(r){ return r.json(); })
     .then(function(data){
       clearTimeout(timeoutMsg);
       try{
@@ -1810,12 +1718,7 @@ function runAI(file){
           text = data.content[0].text;
           el('aiLog').textContent = text;
         } else if(data && data.error) {
-          var et = data.error.type;
-          if(et === 'overloaded_error' || et === 'rate_limit_error' || et === 'api_error'){
-            el('aiLog').textContent = "It's not you, it's us. 😅 Splitz is a little overwhelmed right now — try uploading again in a moment!";
-          } else {
-            el('aiLog').textContent = 'API Error: ' + JSON.stringify(data.error).slice(0,300);
-          }
+          el('aiLog').textContent = 'API Error: ' + JSON.stringify(data.error).slice(0,300);
           throw new Error('shown');
         } else {
           el('aiLog').textContent = 'Unexpected response: ' + JSON.stringify(data).slice(0,300);
@@ -1852,7 +1755,6 @@ function runAI(file){
     })
     .catch(function(err){
       clearTimeout(timeoutMsg);
-      logErr('receipt OCR request', err);
       showToast('Connection error — check your internet and try again');
       items = [];
       svcFromReceipt = null;
@@ -1876,27 +1778,14 @@ function showSummary(){
   setTimeout(function(){ el('summarySection').scrollIntoView({behavior:'smooth',block:'start'}); },80);
 }
 
-function editSvc(v){
-  var n = parseFloat(v);
-  // Blank or invalid clears the service charge entirely (treated as none).
-  svcFromReceipt = (v === '' || v == null || isNaN(n)) ? null : sanitizeAmount(n);
-  refreshSummary();
-}
-
 function refreshSummary(){
   var sub = getSubtotal();
   var svc = getSvc();
   var tot = sub+svc;
-  // Service charge is always editable so the biller can add it when the AI
-  // misses it (or correct/remove it). Show the row whenever there are items.
-  el('svcRow').style.display = '';
-  el('svcDivider').style.display = '';
-  el('svcLabel').textContent = svcFromReceipt !== null ? 'Service Charge' : 'Service Charge (add if any)';
-  var svcInput = el('svcInput');
-  if(svcInput && document.activeElement !== svcInput){
-    svcInput.value = svcFromReceipt !== null ? svcFromReceipt : '';
-  }
+  var svcLbl = svcFromReceipt!==null ? 'Service Charge (from receipt)' : 'Service Charge (10%)';
+  el('svcLabel').textContent = svcLbl;
   el('subtotalEl').textContent = fmt(sub);
+  el('svcEl').textContent = fmt(svc);
   el('totalEl').textContent = fmt(tot);
 
   // Items list — editable
@@ -2015,36 +1904,13 @@ function startNewReceipt(){
   el('gcashSavedChip').style.display='none';
   el('gcashFullForm').style.display='block';
   currentBillId = null;
-  // Detach from any existing session so edits to this fresh receipt don't
-  // overwrite a previously-saved bill's items. A new session is created when
-  // the link is generated.
-  activeSession = null;
   // Do NOT clear gcashNum/gcashName variables or Supabase biller record
   // Biller details must stay so splitters can still pay via old links
 
+
+
+
   goTo(0);
-}
-
-function showConfirmReceiptSheet(){
-  if(!items.length){ showToast('Please upload a receipt first'); return; }
-  var subtotal = getSubtotal();
-  if(subtotal <= 0){ showToast('Please add valid item prices before generating a link'); return; }
-
-  var svc = getSvc();
-  var total = getTotal();
-  var rows = items.map(function(it){ return '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #E2E8F0"><span style="color:#5A6A85">'+esc(it.name)+'</span><span style="font-weight:700">'+fmt(it.price)+'</span></div>'; }).join('');
-  var svcRow = svc > 0 ? '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid #E2E8F0"><span style="color:#5A6A85">Service Charge</span><span style="font-weight:700">'+fmt(svc)+'</span></div>' : '';
-
-  el('confirmReceiptSummary').innerHTML = rows + svcRow +
-    '<div style="display:flex;justify-content:space-between;padding:8px 0 0;font-size:15px"><span style="font-weight:800">Total</span><span style="font-weight:800;color:var(--accent)">'+fmt(total)+'</span></div>';
-
-  el('confirmReceiptOverlay').style.display = 'block';
-  el('confirmReceiptSheet').style.display = 'block';
-}
-
-function hideConfirmReceiptSheet(){
-  el('confirmReceiptOverlay').style.display = 'none';
-  el('confirmReceiptSheet').style.display = 'none';
 }
 
 function generateAndShow(){
@@ -2070,7 +1936,9 @@ function generateAndShow(){
   saveBillToSupabase(function(slug){
     if(!slug){ showToast('Could not save — check your connection'); return; }
 
-    var fullUrl = billUrl(slug);
+    // Use real deployed URL
+    var appUrl = window.location.origin + window.location.pathname;
+    var fullUrl = appUrl + '?bill=' + slug;
 
     el('lnkUrl').textContent = fullUrl;
     var h = el('lnkEqualHint');
@@ -2102,11 +1970,12 @@ function renderLink(){
   if(!lnkEl) return; // element only exists in s0 summary section
   var sess = sessions[activeSession];
   if(sess && !sess.slug){
-    sess.slug = genSlug();
+    sess.slug = 'bill-'+Math.random().toString(36).slice(2,10);
     persistSessions();
   }
   var slug = (sess && sess.slug) || 'pay-xxxx';
-  lnkEl.textContent = billUrl(slug);
+  var appUrlR = window.location.origin + window.location.pathname;
+  lnkEl.textContent = appUrlR + '?bill=' + slug;
   var h = el('lnkEqualHint');
   if(h){
     h.style.display = splitMode==='equal'?'block':'none';
@@ -2133,6 +2002,11 @@ function saveCurrentSession(){
     sessions[exists]._draft    = true;
     activeSession = exists;
   } else {
+    if(sessions.length >= MAX_SESSIONS){
+      sessions.shift();
+      // Adjust activeSession index after shift to avoid drift
+      if(activeSession !== null && activeSession > 0) activeSession--;
+    }
     var billNum = 'Bill #'+(sessions.length+1);
     sessions.push({
       id:        Date.now(),
@@ -2176,7 +2050,7 @@ function renderGuest(){
     el('alreadyPaidSection').style.display='block';
     el('alreadyPaidList').innerHTML = paidList.map(function(p){
       return '<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;last-child:margin-bottom:0">'
-        +'<div style="width:24px;height:24px;border-radius:50%;background:var(--abg);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--accent)">'+esc((p.name||'?').charAt(0).toUpperCase())+'</div>'
+        +'<div style="width:24px;height:24px;border-radius:50%;background:var(--abg);border:1.5px solid var(--accent);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--accent)">'+p.name[0].toUpperCase()+'</div>'
         +'<div style="font-size:13px;font-weight:600;color:var(--text)">'+esc(p.name)+'</div>'
         +'<span style="margin-left:auto;font-size:11px;color:var(--accent);font-weight:700">✓ Paid</span>'
         +'</div>';
@@ -2218,38 +2092,25 @@ function getClaimedItemIds(){
 
 function renderGuestItems(){
   var claimed  = getClaimedItemIds();
-
-  // Prune any selections that have since been claimed by another splitter so the
-  // running total never includes an item the user can no longer pay for.
-  var prunedSomething = false;
-  Object.keys(picked).forEach(function(id){
-    if(picked[id] && claimed[id]){ picked[id] = false; prunedSomething = true; }
-  });
-
   var available = items.filter(function(it){ return !claimed[it.id]; });
 
   if(available.length === 0){
     el('guestItems').innerHTML =
       '<div style="text-align:center;padding:20px 0;color:var(--dim);font-size:13px">🎉 All items have been claimed!</div>';
-    if(prunedSomething) showToast('An item you picked was just claimed by someone else','warn');
     updateGuestCalc();
     return;
   }
 
-  // Re-apply the user's current selection state so a background refresh never
-  // silently clears what they already tapped.
   el('guestItems').innerHTML = available.map(function(it,idx){
-    var on = !!picked[it.id];
-    return '<div class="item-row'+(on?' on':'')+'" id="ir'+it.id+'" onclick="toggleItem('+it.id+')">'
+    return '<div class="item-row" id="ir'+it.id+'" onclick="toggleItem('+it.id+')">'
       +'<div style="display:flex;gap:12px;align-items:center">'
-      +'<div class="ichk'+(on?' on':'')+'" id="ic'+it.id+'">'+(on?'✓':'')+'</div>'
-      +'<div style="font-size:14px;color:'+(on?'var(--text)':'var(--mid)')+'" id="in'+it.id+'">'+esc(it.name)+'</div>'
+      +'<div class="ichk" id="ic'+it.id+'"></div>'
+      +'<div style="font-size:14px;color:var(--mid)" id="in'+it.id+'">'+esc(it.name)+'</div>'
       +'</div>'
-      +'<div style="font-size:14px;font-weight:700;color:'+(on?'var(--accent)':'var(--dim)')+'" id="ip'+it.id+'">'+fmt(it.price)+'</div>'
+      +'<div style="font-size:14px;font-weight:700;color:var(--dim)" id="ip'+it.id+'">'+fmt(it.price)+'</div>'
       +'</div>'
       +(idx<available.length-1?'<div style="height:1px;background:var(--border);margin:0 -8px"></div>':'');
   }).join('');
-  if(prunedSomething) showToast('An item you picked was just claimed by someone else','warn');
   updateGuestCalc();
 }
 
@@ -2262,7 +2123,6 @@ function toggleItem(id){
   if(nm)  nm.style.color = on?'var(--text)':'var(--mid)';
   if(pr)  pr.style.color = on?'var(--accent)':'var(--dim)';
   updateGuestCalc();
-  saveSplitterProgress('pick');
 }
 
 function updateGuestCalc(){
@@ -2271,8 +2131,7 @@ function updateGuestCalc(){
   var isEq = splitMode==='equal';
   if(isEq){
     btn.textContent = name ? 'Pay '+fmt(getPerPerson())+' to the biller →' : 'Pay to the biller →';
-    // Keep enabled so tapping without a name triggers the warning in goToPayment()
-    btn.disabled = false;
+    btn.disabled = !name;
     return;
   }
   // Use full subtotal for proportional SC (so proportions stay correct)
@@ -2284,10 +2143,6 @@ function updateGuestCalc(){
   var card     = el('guestCalcCard');
   if(hasItems){
     card.style.display='block';
-    // Hide the service-charge line when this bill has none.
-    var gHasSvc = getSvc() > 0;
-    if(el('gSvcRow')) el('gSvcRow').style.display = gHasSvc ? '' : 'none';
-    if(el('gSvcDivider')) el('gSvcDivider').style.display = gHasSvc ? '' : 'none';
     el('gSubEl').textContent = fmt(gSub);
     el('gSvcEl').textContent = fmt(gSvc);
     el('gTotEl').textContent = fmt(gTot);
@@ -2296,8 +2151,7 @@ function updateGuestCalc(){
     card.style.display='none';
     btn.textContent = 'Pay to the biller →';
   }
-  // Keep enabled so tapping without a name (or items) triggers the warning in goToPayment()
-  btn.disabled = false;
+  btn.disabled = !(name && hasItems);
 }
 
 // ─── Payment screen ───────────────────────────────────────────────────────────
@@ -2312,15 +2166,7 @@ function goToPayment(){
     var gSub   = items.reduce(function(s,it){return s+(picked[it.id]?it.price:0);},0);
     gTot = gSub + (allSub>0 ? Math.round((gSub/allSub)*getSvc()) : 0);
   }
-  if(!name){
-    var inp = el('guestName');
-    inp.style.borderColor = '#E03B3B';
-    inp.style.background  = 'rgba(224,59,59,0.06)';
-    inp.focus();
-    inp.scrollIntoView({ behavior:'smooth', block:'center' });
-    showToast('Please enter your name first');
-    return;
-  }
+  if(!name){ showToast("Please enter your name before paying"); el("guestName").focus(); return; }
   if(!isEq && !Object.keys(picked).some(function(k){return picked[k];})){showToast("Please select at least one item"); return;}
 
   // Biller must have at least a GCash number for splitters to pay
@@ -2337,7 +2183,6 @@ function goToPayment(){
   el('payGcashName').textContent= gcashName || '—';
   el('payGcashNum').textContent = gcashNum  || '—';
   el('payWarnHost').textContent = 'the biller';
-  el('verifyHost').textContent  = gcashName ? '“'+gcashName+'”' : "the biller's name";
 
   // Show QR if uploaded
   if(qrDataUrl){
@@ -2353,10 +2198,6 @@ function goToPayment(){
   // Show account name section only if name exists
   el('payNameSection').style.display = gcashName ? 'block' : 'none';
 
-  // Snapshot that they reached the payment screen so a GCash app round-trip
-  // brings them straight back here instead of the pick screen.
-  saveSplitterProgress('pay');
-
   goTo(5);
 }
 
@@ -2371,12 +2212,10 @@ function confirmSent(){
   // For item splits: re-fetch latest payments first to catch concurrency conflicts
   if(!isEq && currentBillId){
     supaGet('payments?bill_id=eq.'+currentBillId+'&select=*').then(function(latestPmts){
-      // Build set of already-claimed item IDs from ALL existing payments
-      // (pending OR confirmed). An item picked by anyone else — even before the
-      // biller confirms — is taken, so two splitters can't grab the same item.
+      // Build set of already-claimed item IDs from confirmed payments
       var nowClaimed = {};
       (latestPmts||[]).forEach(function(p){
-        (p.item_ids||[]).forEach(function(id){ nowClaimed[id]=p.splitter_name; });
+        if(p.confirmed)(p.item_ids||[]).forEach(function(id){ nowClaimed[id]=p.splitter_name; });
       });
       // Check if any of the splitter's picked items were just claimed
       var conflicts = pickedIds.filter(function(id){ return nowClaimed[id]; });
@@ -2408,8 +2247,6 @@ function confirmSent(){
 
 function doSavePayment(payment){
   savePaymentToSupabase(payment, function(){
-    // Payment recorded — the saved progress is no longer needed.
-    clearSplitterProgress();
     document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
     el('s6').classList.add('active');
     el('dashHead').style.display='none';
@@ -2417,7 +2254,7 @@ function doSavePayment(payment){
     el('noSessionMsg').style.display='none';
     el('sessionDetail').style.display='none';
     el('sentHead').style.display='block';
-    el('sentMsg').innerHTML = 'Waiting for <strong>'+esc(gcashName||'the biller')+'</strong> to confirm your payment.'
+    el('sentMsg').innerHTML = 'Waiting for <strong>'+(gcashName||'the biller')+'</strong> to confirm your payment.'
       + '<div style="font-size:32px;font-weight:900;color:var(--accent);letter-spacing:-1px;margin:16px 0 8px">'+fmt(payment.amount)+'</div>'
       + '<div style="font-size:14px;color:var(--mid)">Thank you! 🙏</div>';
     window.scrollTo(0,0);
@@ -2428,10 +2265,6 @@ function doSavePayment(payment){
 function renderDash(){
   // Block splitters entirely
   if(!billerMode) return;
-  // Restore the dashboard chrome — in case we're returning from a Guest View
-  // test-payment that left the "Payment Sent" confirmation showing.
-  if(el('dashHead')) el('dashHead').style.display='block';
-  if(el('sentHead')) el('sentHead').style.display='none';
   // Show empty state if no sessions
   if(sessions.length===0){
     el('noSessionMsg').style.display='block';
@@ -2439,31 +2272,27 @@ function renderDash(){
     el('sessionDetail').style.display='none';
     return;
   }
-  // If detached (e.g. after starting a new receipt), default to the latest bill.
-  if(activeSession === null || !sessions[activeSession]){
-    activeSession = sessions.length - 1;
-  }
 
   el('noSessionMsg').style.display='none';
   el('sessionTabsWrap').style.display='block';
   el('sessionDetail').style.display='block';
-  el('sessionCount').textContent = '('+sessions.length+')';
+  el('sessionCount').textContent = '('+sessions.length+'/'+MAX_SESSIONS+')';
 
   // Render session grid
   var tabsHtml = sessions.map(function(s,i){
       var isActive  = i===activeSession;
       var sItems    = s.items;
-      var sSvc      = s.svc !== null ? s.svc : 0;
+      var sSvc      = s.svc !== null ? s.svc : Math.round(sItems.reduce(function(a,b){return a+b.price;},0)*SVC);
       var sTot      = sItems.reduce(function(a,b){return a+b.price;},0) + sSvc;
       var sConf     = s.payments.filter(function(p){return p.confirmed;}).reduce(function(a,p){
         if(p.equalSplit||p.amount) return a+(p.amount||0);
         var sub=p.items.reduce(function(x,id){var it=sItems.find(function(i){return i.id===id;});return x+(it?it.price:0);},0);
-        return a+sub;
+        return a+sub+Math.round(sub*SVC);
       },0);
       var sForConf  = s.payments.filter(function(p){return !p.confirmed;}).reduce(function(a,p){
         if(p.equalSplit||p.amount) return a+(p.amount||0);
         var sub=p.items.reduce(function(x,id){var it=sItems.find(function(i){return i.id===id;});return x+(it?it.price:0);},0);
-        return a+sub;
+        return a+sub+Math.round(sub*SVC);
       },0);
       var sOwed     = Math.max(0, sTot-sConf-sForConf);
       var isSettled = sOwed===0 && sForConf===0 && sConf>0;
@@ -2503,7 +2332,7 @@ function renderDash(){
         +'<div style="width:24px;height:24px;border-radius:6px;background:'+(isActive?'var(--accent)':'var(--border)')+';'
         +'display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;'
         +'color:'+(isActive?'#fff':'var(--mid)')+';margin:0 auto 4px">'+( i+1)+'</div>'
-        +'<div style="font-size:10px;font-weight:700;color:'+(isActive?'var(--accent)':'var(--text)')+';line-height:1.2;word-break:break-word">'+esc(shortLabel)+'</div>'
+        +'<div style="font-size:10px;font-weight:700;color:'+(isActive?'var(--accent)':'var(--text)')+';line-height:1.2;word-break:break-word">'+shortLabel+'</div>'
         +'<div style="font-size:9px;color:var(--dim);margin-top:2px">'+s.date.split(' · ')[0]+'</div>'
         +'<div style="font-size:10px;font-weight:700;color:var(--text);margin-top:3px">'+fmt(sTot)+'</div>'
         +'</div>';
@@ -2516,7 +2345,7 @@ function renderDash(){
   if(!sess) return;
 
   var sessItems = sess.items;
-  var sessSvc   = sess.svc !== null ? sess.svc : 0;
+  var sessSvc   = sess.svc !== null ? sess.svc : Math.round(sessItems.reduce(function(s,i){return s+i.price;},0)*SVC);
   var sessTot   = sessItems.reduce(function(s,i){return s+i.price;},0) + sessSvc;
   var payments  = sess.payments;
 
@@ -2526,7 +2355,7 @@ function renderDash(){
       var it = sessItems.find(function(i){return i.id===id;});
       return s+(it?it.price:0);
     },0);
-    return sub;
+    return sub + Math.round(sub*SVC);
   }
 
   var confirmed   = payments.filter(function(p){return p.confirmed;}).reduce(function(s,p){return s+calcSessAmt(p);},0);
@@ -2560,10 +2389,11 @@ function renderDash(){
 
   // Always show payment link — generate one if not yet saved
   if(!sess.slug){
-    sess.slug = genSlug();
+    sess.slug = 'bill-'+Math.random().toString(36).slice(2,10);
     persistSessions();
   }
-  el('dashLinkUrl').textContent = billUrl(sess.slug);
+  var dashAppUrl = window.location.origin + window.location.pathname;
+  el('dashLinkUrl').textContent = dashAppUrl + '?bill=' + sess.slug;
   el('dashLinkCard').style.display = 'block';
 
   // Fully paid banner — show only when owed = 0, forConfirm = 0, and there are confirmed payments
@@ -2638,11 +2468,11 @@ function renderDash(){
         var amt   = calcSessAmt(p);
         var pItms = p.items.map(function(id){return sessItems.find(function(i){return i.id===id;});}).filter(Boolean);
         var prev  = p.equalSplit ? 'Equal share (1 of '+sess.numPeople+' people)'
-                  : esc(pItms.slice(0,2).map(function(i){return i.name;}).join(', '))+(pItms.length>2?' +'+(pItms.length-2):'');
+                  : pItms.slice(0,2).map(function(i){return i.name;}).join(', ')+(pItms.length>2?' +'+(pItms.length-2):'');
         var last  = idx===payments.length-1;
         return '<div style="display:flex;align-items:center;justify-content:space-between;padding:12px 0'+(last?'':';border-bottom:1px solid var(--border)')+'">'
           +'<div style="display:flex;gap:12px;align-items:center">'
-          +'<div class="avatar '+(p.confirmed?'av-green':'av-yellow')+'">'+esc((p.name||'?').charAt(0).toUpperCase())+'</div>'
+          +'<div class="avatar '+(p.confirmed?'av-green':'av-yellow')+'">'+esc(p.name[0]).toUpperCase()+'</div>'
           +'<div>'
           +'<div style="font-size:14px;font-weight:700">'+esc(p.name)+'</div>'
           +'<div style="font-size:11px;color:var(--dim);margin-top:2px">'+prev+'</div>'
@@ -2681,7 +2511,7 @@ function calcAmt(p){
     var it = items.find(function(i){return i.id===id;});
     return s+(it?it.price:0);
   },0);
-  return sub;
+  return sub + Math.round(sub*SVC);
 }
 
 function confirmPay(idx){
@@ -2745,38 +2575,16 @@ function copyDashLink(){
   });
 }
 
-function openGcashApp(){
-  // Try the deep link first; if GCash isn't installed the browser ignores it.
-  // Fall back to the GCash site after a short delay so installed-app users
-  // aren't redirected away unnecessarily. Use a same-tab navigation (not
-  // window.open) because the fallback fires from a timer — outside the user
-  // gesture — and mobile browsers block popups opened without a gesture.
-  var fallback = setTimeout(function(){
-    window.location.href = 'https://www.gcash.com';
-  }, 1500);
-  window.location.href = 'gcash://';
-  // If the deep link succeeded the page loses focus and the timer is irrelevant,
-  // but we clear it on visibilitychange to avoid the redundant web redirect.
-  document.addEventListener('visibilitychange', function handler(){
-    clearTimeout(fallback);
-    document.removeEventListener('visibilitychange', handler);
-  });
-}
-
 function copyPayNum(){
   var num = (el('payGcashNum').textContent||'').trim();
   if(!num||num==='—') return;
   var btn = el('copyNumBtn');
   safeCopy(num, function(){
     btn.textContent='✓ Copied! Now open GCash and send';
-    btn.style.background='linear-gradient(135deg,#A8F0D0,#6FE0B0)';
-    btn.style.color='#00694A';
-    btn.style.boxShadow='0 4px 16px rgba(0,179,122,0.15)';
+    btn.style.background='linear-gradient(135deg,#008F60,#006B47)';
     setTimeout(function(){
       btn.textContent='📋 Tap to Copy GCash Number';
       btn.style.background='linear-gradient(135deg,#00B37A,#009A67)';
-      btn.style.color='#fff';
-      btn.style.boxShadow='0 4px 16px rgba(0,179,122,0.2)';
     },3000);
   });
 }
@@ -2788,12 +2596,11 @@ document.addEventListener('DOMContentLoaded', function(){
 
   // Check if splitter is opening a bill link (?bill=slug)
   var urlParams = new URLSearchParams(window.location.search);
-  var billSlug  = urlParams.get('b') || urlParams.get('bill');
+  var billSlug  = urlParams.get('bill');
 
   if(billSlug){
     // Splitter flow — load bill from Supabase by slug
     billerMode = false;
-    splitterSlug = billSlug;
 
     lockBillerUI();
     // Show loading
@@ -2804,32 +2611,10 @@ document.addEventListener('DOMContentLoaded', function(){
       if(!bill){
         el('s4Title').textContent = 'Bill Not Found';
         el('s4Sub').textContent   = 'This link may have expired or is invalid';
-        // Hide the interactive parts — nothing to pay for.
-        el('itemPickSection').style.display = 'none';
-        el('equalPaySection').style.display = 'none';
-        el('alreadyPaidSection').style.display = 'none';
-        var pb = el('payBtn'); if(pb) pb.style.display = 'none';
-        var nameCard = el('guestName') && el('guestName').closest('.card');
-        if(nameCard) nameCard.style.display = 'none';
         return;
       }
       showSplitterOnboard();
       renderGuest();
-
-      // Restore any in-progress payment left behind by a GCash app round-trip
-      // (or an accidental tab close) so the splitter resumes where they were.
-      var prog = restoreSplitterProgress();
-      if(prog){
-        if(prog.name){ var gn = el('guestName'); if(gn) gn.value = prog.name; }
-        if(splitMode!=='equal' && prog.picked && prog.picked.length){
-          prog.picked.forEach(function(id){ picked[id] = true; });
-          renderGuestItems();
-        }
-        updateGuestCalc();
-        // If they had already advanced to the payment screen, take them back
-        // there directly (name is required for goToPayment to proceed).
-        if(prog.stage==='pay' && prog.name){ goToPayment(); }
-      }
     });
   } else {
     // Biller flow — load from Supabase
@@ -2840,18 +2625,1392 @@ document.addEventListener('DOMContentLoaded', function(){
           if(sessionStorage.getItem('splitsies_biller')==='1' &&
              sessionStorage.getItem('splitz_pin_unlocked')==='1'){
             billerMode = true;
-        
             el('navBar').style.display = 'flex';
             pinUnlocked = true;
             goTo(6);
             return;
           }
         }catch(e){}
-        showBillerUI();
+        initInviteGate();
       });
     });
   }
 });
 </script>
+
+<!-- ══ Travel Tab Screens ══ -->
+
+<!-- T1: Travel Home -->
+<div id="tHome" class="screen">
+  <div class="ptitle">✈️ Travel Split</div>
+  <div class="psub">Split trip expenses with your travel crew.</div>
+
+  <div class="card mt16" style="text-align:center;padding:28px 18px">
+    <div style="font-size:48px;margin-bottom:12px">🌏</div>
+    <div style="font-size:15px;font-weight:700;margin-bottom:6px">Planning a trip?</div>
+    <div style="font-size:13px;color:var(--mid);margin-bottom:20px;line-height:1.6">Create a trip, share the link with your crew, and track every expense together — in any currency.</div>
+    <button class="btn btn-primary" onclick="goToTravelCreate()">+ Create New Trip</button>
+  </div>
+
+  <div id="tMyTrips" style="display:none">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="slabel" style="margin-bottom:0">My Trips</div>
+    </div>
+    <div id="tTripList"></div>
+  </div>
+</div>
+
+<!-- T2: Create Trip -->
+<div id="tCreate" class="screen">
+  <div class="ptitle">New Trip</div>
+  <div class="psub">Set up your trip details.</div>
+
+  <div class="card mt16">
+    <div class="field">
+      <label class="flabel">Trip Name <span style="color:var(--red)">*</span></label>
+      <input type="text" id="tName" placeholder="e.g. Osaka Trip 2025" autocomplete="off"/>
+    </div>
+    <div class="field">
+      <label class="flabel">Destination Country & Currency <span style="color:var(--red)">*</span></label>
+      <div style="position:relative">
+        <input type="text" id="tCountrySearch" placeholder="Search country..." autocomplete="off"
+          oninput="filterTravelCountries(this.value)" onfocus="showTravelCountries()"/>
+        <div id="tCountryList" style="display:none;position:absolute;left:0;right:0;top:calc(100% + 4px);background:#fff;border:1px solid var(--border);border-radius:12px;box-shadow:0 8px 24px rgba(0,0,0,0.1);z-index:999;max-height:220px;overflow-y:auto"></div>
+      </div>
+      <div id="tCurrencyChip" style="display:none;margin-top:8px;font-size:13px;color:var(--accent);font-weight:700;padding:6px 12px;background:var(--abg);border-radius:8px;display:inline-block"></div>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="field" style="flex:1">
+        <label class="flabel">Start Date <span style="color:var(--red)">*</span></label>
+        <input type="date" id="tStartDate" style="width:100%;background:var(--muted);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-size:16px;font-family:inherit;outline:none;min-height:48px"/>
+      </div>
+      <div class="field" style="flex:1">
+        <label class="flabel">End Date <span style="color:var(--red)">*</span></label>
+        <input type="date" id="tEndDate" style="width:100%;background:var(--muted);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-size:16px;font-family:inherit;outline:none;min-height:48px"/>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="slabel">Organizer Password</div>
+    <div style="font-size:12px;color:var(--mid);margin-bottom:12px">This protects your organizer dashboard. Use letters and numbers — no spaces. <span style="color:var(--red)">*</span></div>
+    <div class="field">
+      <label class="flabel">Password</label>
+      <div style="position:relative">
+        <input type="password" id="tPassword" placeholder="Create a password" autocomplete="new-password" style="width:100%;background:var(--muted);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 48px 12px 14px;font-size:16px;font-family:inherit;outline:none;min-height:48px"/>
+        <button type="button" onclick="togglePwdVisibility('tPassword',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px">👁️</button>
+      </div>
+    </div>
+    <div class="field">
+      <label class="flabel">Confirm Password</label>
+      <div style="position:relative">
+        <input type="password" id="tPasswordConfirm" placeholder="Repeat your password" autocomplete="new-password" style="width:100%;background:var(--muted);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 48px 12px 14px;font-size:16px;font-family:inherit;outline:none;min-height:48px"/>
+        <button type="button" onclick="togglePwdVisibility('tPasswordConfirm',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px">👁️</button>
+      </div>
+    </div>
+  </div>
+
+  <button class="btn btn-primary" onclick="createTrip()">Create Trip & Get Link →</button>
+  <button class="btn btn-ghost" style="margin-top:10px" onclick="openSampleDash()">👀 See Sample Trip Dashboard</button>
+
+  <div id="tLinkReady" style="display:none;margin-top:12px">
+    <div class="card card-green">
+      <div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:6px">🔗 Trip Link Ready!</div>
+      <div style="font-size:13px;color:var(--accent);font-weight:600;word-break:break-all;margin-bottom:12px" id="tLinkUrl">—</div>
+      <button class="btn btn-primary" onclick="copyTripLink()" id="tCopyBtn" style="margin-bottom:8px">📋 Copy & Send to Crew</button>
+      <button class="btn btn-primary" onclick="goToTravelDash()" style="background:linear-gradient(135deg,#1A6FE8,#0055A4)">📊 Open Trip Dashboard →</button>
+    </div>
+  </div>
+</div>
+
+<!-- T3: Trip Member View (opened via link) -->
+<div id="tMember" class="screen">
+  <div style="font-size:13px;color:var(--dim);padding-top:24px;padding-bottom:2px">Trip organized by <span style="color:var(--accent);font-weight:700" id="tMemberHost">—</span></div>
+  <div class="ptitle" id="tMemberTitle">Loading trip…</div>
+  <div class="psub" id="tMemberSub">Please wait</div>
+
+  <!-- Join section -->
+  <div id="tJoinSection" class="card mt16" style="display:none">
+    <div class="slabel">Your Name</div>
+    <input type="text" id="tMemberName" placeholder="e.g. Julius" autocomplete="off" oninput="onTMemberNameInput()"/>
+    <div id="tMemberNameHint" style="display:none;font-size:11px;color:var(--accent);margin-top:6px;font-weight:600">✓ Name remembered · <span onclick="clearTMemberName()" style="color:var(--dim);cursor:pointer;text-decoration:underline">Clear</span></div>
+    <button class="btn btn-primary mt16" id="tJoinBtn" onclick="joinTrip()" disabled>Join Trip →</button>
+  </div>
+
+  <!-- Expense list -->
+  <div id="tExpenseSection" style="display:none">
+    <!-- Balance summary -->
+    <div id="tMyBalance" class="card card-green" style="display:none;margin-top:16px">
+      <div style="font-size:11px;color:var(--mid);margin-bottom:4px">YOUR SHARE</div>
+      <div style="font-size:28px;font-weight:900;color:var(--accent);letter-spacing:-1px" id="tMyShareAmt">—</div>
+      <div style="font-size:12px;color:var(--mid);margin-top:4px" id="tMyShareDetail">—</div>
+    </div>
+
+    <!-- Add expense button -->
+    <div style="display:flex;justify-content:space-between;align-items:center;margin:16px 0 10px">
+      <div style="font-size:16px;font-weight:800">Expenses</div>
+      <button onclick="openAddExpense()" style="padding:8px 16px;border-radius:10px;background:var(--accent);color:#fff;border:none;font-size:13px;font-weight:700;cursor:pointer;font-family:inherit">+ Add</button>
+    </div>
+
+    <div id="tExpenseList"></div>
+
+    <!-- Settlement section -->
+    <div class="card" style="margin-top:12px">
+      <div class="slabel">Settlement</div>
+      <div id="tSettlementList"></div>
+    </div>
+
+    <!-- Bank details -->
+    <div class="card" id="tBankCard" style="display:none">
+      <div class="slabel">My Bank Details</div>
+      <div style="font-size:12px;color:var(--mid);margin-bottom:12px">So others can pay you back directly.</div>
+      <div class="field">
+        <label class="flabel">Bank Name</label>
+        <input type="text" id="tBankName" placeholder="e.g. GCash, BDO, BPI" autocomplete="off"/>
+      </div>
+      <div class="field">
+        <label class="flabel">Account Number</label>
+        <input type="text" id="tBankAccount" placeholder="Account number" autocomplete="off"/>
+      </div>
+      <div class="field">
+        <label class="flabel">Account Name</label>
+        <input type="text" id="tBankAccountName" placeholder="Account name initials (e.g. JD)" autocomplete="off"/>
+      </div>
+      <button class="btn btn-green-outline" style="padding:10px;font-size:13px" onclick="saveBankDetails()">💾 Save Bank Details</button>
+    </div>
+    <button class="btn btn-ghost" style="margin-top:8px;font-size:13px" onclick="toggleBankDetails()">🏦 <span id="tBankToggleLabel">Add My Bank Details</span></button>
+  </div>
+</div>
+
+<!-- T4: Add Expense Modal -->
+<div id="tAddExpenseModal" style="position:fixed;inset:0;z-index:999;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:540px;padding:28px 24px 40px;animation:slideUp 0.35s cubic-bezier(.4,0,.2,1);max-height:90vh;overflow-y:auto">
+    <div style="font-size:18px;font-weight:800;margin-bottom:20px">Add Expense</div>
+
+    <div class="field">
+      <label class="flabel">Category</label>
+      <select id="tExpCategory" style="width:100%;background:var(--muted);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-size:16px;font-family:inherit;outline:none;min-height:48px">
+        <option value="Transportation">🚌 Transportation</option>
+        <option value="Accommodation">🏨 Accommodation</option>
+        <option value="Pre-Booked Activities">🎡 Pre-Booked Activities</option>
+        <option value="Food & Drinks">🍜 Food & Drinks</option>
+        <option value="Entrance Fees">🎟️ Entrance Fees</option>
+        <option value="SIM / Data">📱 SIM / Data</option>
+        <option value="Shopping">🛍️ Shopping</option>
+        <option value="Travel Insurance">🛡️ Travel Insurance</option>
+        <option value="Other">📌 Other</option>
+      </select>
+    </div>
+    <div class="field">
+      <label class="flabel">Description</label>
+      <input type="text" id="tExpDesc" placeholder="e.g. Shinkansen Tokyo→Osaka" autocomplete="off"/>
+    </div>
+    <div style="display:flex;gap:10px">
+      <div class="field" style="flex:1">
+        <label class="flabel">Amount (<span id="tExpCurrLabel">—</span>)</label>
+        <input type="number" id="tExpAmount" placeholder="0.00" oninput="calcPhpEquiv()"/>
+      </div>
+      <div class="field" style="flex:1">
+        <label class="flabel">≈ PHP</label>
+        <input type="number" id="tExpPhp" placeholder="0.00" style="color:var(--accent)"/>
+      </div>
+    </div>
+    <div class="field">
+      <label class="flabel">Date</label>
+      <input type="date" id="tExpDate" style="width:100%;background:var(--muted);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-size:16px;font-family:inherit;outline:none;min-height:48px"/>
+    </div>
+    <div class="field">
+      <label class="flabel">Split Method</label>
+      <div class="split-toggle">
+        <button class="stab active" id="tExpTabEqual" onclick="setTExpMode('equal')">⚖️ Split Equally</button>
+        <button class="stab" id="tExpTabCustom" onclick="setTExpMode('custom')">👥 Select Members</button>
+      </div>
+      <div id="tExpMemberPicks" style="display:none;margin-top:8px"></div>
+    </div>
+    <div class="field">
+      <label class="flabel">Receipt Photo <span style="color:var(--dim);font-size:11px">optional</span></label>
+      <label for="tExpPhoto" style="display:flex;align-items:center;gap:10px;padding:12px 14px;background:var(--muted);border:1.5px dashed var(--border);border-radius:10px;cursor:pointer">
+        <span style="font-size:22px">📷</span>
+        <div>
+          <div style="font-size:13px;font-weight:600;color:var(--text)">Attach Receipt</div>
+          <div style="font-size:11px;color:var(--dim);margin-top:2px" id="tExpPhotoLabel">No photo attached</div>
+        </div>
+      </label>
+      <input type="file" id="tExpPhoto" accept="image/*" style="display:none" onchange="onTExpPhotoChange(event)"/>
+    </div>
+
+    <div style="display:flex;gap:10px;margin-top:8px">
+      <button class="btn btn-ghost" style="flex:1" onclick="closeTAddExpense()">Cancel</button>
+      <button class="btn btn-primary" style="flex:1" onclick="submitTExpense()">Add Expense</button>
+    </div>
+  </div>
+</div>
+
+<!-- T5: Travel Organizer Dashboard -->
+<div id="tDash" class="screen">
+  <div style="display:flex;justify-content:space-between;align-items:center;padding-top:24px;margin-bottom:2px">
+    <div style="font-size:13px;color:var(--blue);font-weight:700">✈️ Trip Dashboard</div>
+    <button onclick="closeTripConfirm()" id="tCloseTripBtn" style="font-size:11px;color:var(--mid);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline">Close Trip</button>
+  </div>
+  <div style="font-size:24px;font-weight:900;letter-spacing:-0.8px;margin-bottom:16px" id="tDashTitle">—</div>
+
+  <!-- Stats -->
+  <div style="display:flex;gap:8px;margin-bottom:12px">
+    <div class="stat-card" style="flex:1;background:linear-gradient(135deg,#EEF4FF,#E8F0FF);border-color:rgba(26,111,232,0.15)">
+      <div class="stat-lbl">Total Spent</div>
+      <div class="stat-val" style="color:var(--blue);font-size:17px" id="tDashTotal">—</div>
+    </div>
+    <div class="stat-card" style="flex:1">
+      <div class="stat-lbl">Members</div>
+      <div class="stat-val" style="font-size:17px" id="tDashMembers">—</div>
+    </div>
+    <div class="stat-card" style="flex:1">
+      <div class="stat-lbl">Expenses</div>
+      <div class="stat-val" style="font-size:17px" id="tDashExpCount">—</div>
+    </div>
+  </div>
+
+  <!-- Trip link -->
+  <div class="card" style="margin-bottom:12px">
+    <div style="font-size:11px;color:var(--dim);font-weight:600;letter-spacing:0.5px;text-transform:uppercase;margin-bottom:6px">Trip Link</div>
+    <div style="font-size:13px;color:var(--blue);font-weight:600;word-break:break-all;margin-bottom:10px" id="tDashLink">—</div>
+    <button class="btn" style="padding:10px;font-size:13px;background:linear-gradient(135deg,#1A6FE8,#0055A4);color:#fff;border:none;border-radius:12px;cursor:pointer;font-family:inherit;font-weight:700" onclick="copyTDashLink()">📋 Copy & Resend Link</button>
+  </div>
+
+  <!-- Member balances -->
+  <div class="card">
+    <div class="slabel">Member Balances</div>
+    <div id="tDashBalances"></div>
+  </div>
+
+  <!-- Expenses by category -->
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div class="slabel" style="margin-bottom:0">All Expenses</div>
+      <div style="font-size:11px;color:var(--dim)" id="tDashCurrency"></div>
+    </div>
+    <div id="tDashExpenses"></div>
+  </div>
+
+  <!-- Settlement -->
+  <div class="card">
+    <div class="slabel">Settlement Summary</div>
+    <div id="tDashSettlement"></div>
+  </div>
+
+  <!-- Closed banner -->
+  <div id="tClosedBanner" style="display:none;margin-top:12px">
+    <div style="background:linear-gradient(135deg,#1A6FE8,#0055A4);border-radius:16px;padding:24px 20px;text-align:center;box-shadow:0 4px 24px rgba(26,111,232,0.25)">
+      <div style="font-size:40px;margin-bottom:10px">🎉</div>
+      <div style="font-size:20px;font-weight:900;color:#fff;margin-bottom:6px">Trip Closed!</div>
+      <div style="font-size:13px;color:rgba(255,255,255,0.85);line-height:1.6">This trip has been settled. Safe travels! ✈️</div>
+    </div>
+  </div>
+</div>
+
+<!-- T6: Travel Password Lock -->
+<div id="tLock" class="screen">
+  <div style="text-align:center;padding:48px 0 24px">
+    <div style="width:64px;height:64px;border-radius:18px;background:rgba(26,111,232,0.08);border:1.5px solid var(--blue);display:flex;align-items:center;justify-content:center;font-size:28px;margin:0 auto 16px">✈️</div>
+    <div class="ptitle" style="padding-top:0">Trip Access</div>
+    <div class="psub" id="tLockSub">Enter your trip password</div>
+  </div>
+  <div class="card">
+    <div style="position:relative;margin-bottom:12px">
+      <input type="password" id="tLockInput" placeholder="Enter trip password" autocomplete="off"
+        style="width:100%;background:var(--muted);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:14px 48px 14px 14px;font-size:16px;font-family:inherit;outline:none;min-height:48px"
+        onkeydown="if(event.key='Enter') checkTripPassword()"/>
+      <button type="button" onclick="togglePwdVisibility('tLockInput',this)" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px;padding:4px">👁️</button>
+    </div>
+    <button class="btn" style="background:linear-gradient(135deg,#1A6FE8,#0055A4);color:#fff;border:none" onclick="checkTripPassword()">Unlock Dashboard →</button>
+  </div>
+</div>
+
+
+<!-- ══ Travel Onboarding Modal ══ -->
+<div id="tOnboardModal" style="position:fixed;inset:0;z-index:1000;display:none;align-items:flex-end;justify-content:center;background:rgba(0,0,0,0.45);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px)">
+  <div style="background:#fff;border-radius:24px 24px 0 0;width:100%;max-width:540px;padding:32px 24px 40px;animation:slideUp 0.35s cubic-bezier(.4,0,.2,1)">
+
+    <div style="text-align:center;margin-bottom:28px">
+      <div style="width:64px;height:64px;border-radius:18px;background:linear-gradient(135deg,#EEF4FF,#E8F0FF);border:1px solid rgba(26,111,232,0.2);display:flex;align-items:center;justify-content:center;font-size:32px;margin:0 auto 12px">✈️</div>
+      <div style="font-size:22px;font-weight:900;letter-spacing:-0.6px;color:#0F1F3D">Travel Split</div>
+      <div style="font-size:14px;color:#5A6A85;margin-top:4px">Track trip expenses with your crew</div>
+    </div>
+
+    <div style="display:flex;flex-direction:column;gap:16px;margin-bottom:28px">
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#EEF4FF,#E8F0FF);border:1px solid rgba(26,111,232,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🗺️</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#0F1F3D;margin-bottom:2px">Create your trip</div>
+          <div style="font-size:13px;color:#5A6A85;line-height:1.5">Set your destination, dates, and a password — then share the link with your crew.</div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#EAECF0;margin-left:50px"></div>
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#EEF4FF,#E8F0FF);border:1px solid rgba(26,111,232,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">🧾</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#0F1F3D;margin-bottom:2px">Log expenses together</div>
+          <div style="font-size:13px;color:#5A6A85;line-height:1.5">Anyone in the trip can add expenses — transport, food, hotels, activities — in any currency.</div>
+        </div>
+      </div>
+
+      <div style="height:1px;background:#EAECF0;margin-left:50px"></div>
+
+      <div style="display:flex;gap:14px;align-items:flex-start">
+        <div style="width:36px;height:36px;border-radius:10px;background:linear-gradient(135deg,#EEF4FF,#E8F0FF);border:1px solid rgba(26,111,232,0.2);display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0">💸</div>
+        <div>
+          <div style="font-size:15px;font-weight:700;color:#0F1F3D;margin-bottom:2px">Settle up at the end</div>
+          <div style="font-size:13px;color:#5A6A85;line-height:1.5">See exactly who owes whom and settle via bank transfer when the trip is done.</div>
+        </div>
+      </div>
+
+    </div>
+
+    <button onclick="closeTOnboard()" style="width:100%;padding:15px;border-radius:14px;border:none;background:linear-gradient(135deg,#1A6FE8,#0055A4);color:#fff;font-size:16px;font-weight:800;cursor:pointer;font-family:'Plus Jakarta Sans',sans-serif;box-shadow:0 4px 20px rgba(26,111,232,0.3)">
+      Got it, let's go! →
+    </button>
+    <div style="text-align:center;font-size:11px;color:#9AAABE;margin-top:12px">Tap anywhere outside to dismiss</div>
+  </div>
+</div>
 </body>
 </html>
+
+<script>
+
+
+// ════════════════════════════════════════════════════════════════════
+// TRAVEL MODULE
+// ════════════════════════════════════════════════════════════════════
+
+// ── Country/Currency data ────────────────────────────────────────────
+var COUNTRIES = [
+  {name:'Japan',code:'JP',currency:'JPY',symbol:'¥'},
+  {name:'United States',code:'US',currency:'USD',symbol:'$'},
+  {name:'South Korea',code:'KR',currency:'KRW',symbol:'₩'},
+  {name:'United Kingdom',code:'GB',currency:'GBP',symbol:'£'},
+  {name:'European Union',code:'EU',currency:'EUR',symbol:'€'},
+  {name:'Australia',code:'AU',currency:'AUD',symbol:'A$'},
+  {name:'Singapore',code:'SG',currency:'SGD',symbol:'S$'},
+  {name:'Thailand',code:'TH',currency:'THB',symbol:'฿'},
+  {name:'Hong Kong',code:'HK',currency:'HKD',symbol:'HK$'},
+  {name:'Taiwan',code:'TW',currency:'TWD',symbol:'NT$'},
+  {name:'China',code:'CN',currency:'CNY',symbol:'¥'},
+  {name:'Malaysia',code:'MY',currency:'MYR',symbol:'RM'},
+  {name:'Indonesia',code:'ID',currency:'IDR',symbol:'Rp'},
+  {name:'Vietnam',code:'VN',currency:'VND',symbol:'₫'},
+  {name:'Cambodia',code:'KH',currency:'USD',symbol:'$'},
+  {name:'Canada',code:'CA',currency:'CAD',symbol:'C$'},
+  {name:'New Zealand',code:'NZ',currency:'NZD',symbol:'NZ$'},
+  {name:'United Arab Emirates',code:'AE',currency:'AED',symbol:'د.إ'},
+  {name:'Switzerland',code:'CH',currency:'CHF',symbol:'CHF'},
+  {name:'Other',code:'XX',currency:'USD',symbol:'$'}
+];
+
+// ── Travel state ─────────────────────────────────────────────────────
+var tCurrentTrip   = null;  // loaded trip object
+var tCurrentMember = null;  // current member object
+var tExpSplitMode  = 'equal';
+var tExpPhotoData  = null;
+var tSelectedCountry = null;
+var tExchangeRate  = null;  // 1 foreign = X PHP
+var tTripUnlocked  = false;
+
+// ── Nav ───────────────────────────────────────────────────────────────
+function goToTravel(){
+  updateNav('T');
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  el('tHome').classList.add('active');
+  window.scrollTo(0,0);
+  loadMyTrips();
+}
+
+function goToTravelCreate(){
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  el('tCreate').classList.add('active');
+  window.scrollTo(0,0);
+  updateNav('T');
+  // Set today as default expense date
+  var today = new Date().toISOString().split('T')[0];
+  el('tStartDate').value = today;
+}
+
+function goToTravelDash(){
+  if(!tCurrentTrip) return;
+  if(!tTripUnlocked){
+    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+    el('tLock').classList.add('active');
+    el('tLockInput').value='';
+    window.scrollTo(0,0);
+    return;
+  }
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  el('tDash').classList.add('active');
+  window.scrollTo(0,0);
+  renderTDash();
+}
+
+function updateNav(n){
+  [0,6].forEach(function(i){
+    var ic=el('n'+i), lb=el('nl'+i);
+    if(!ic) return;
+    ic.className = 'nic';
+    lb.className = 'nlbl';
+  });
+  var tic=el('nT'), tlb=el('nlT');
+  if(tic){ tic.className='nic'; tlb.className='nlbl'; }
+  if(n==='T'){
+    if(tic){ tic.className='nic active'; tlb.className='nlbl active'; }
+  } else {
+    var ic=el('n'+n), lb=el('nl'+n);
+    if(ic){ ic.className='nic active'; lb.className='nlbl active'; }
+  }
+}
+
+// ── Country search ────────────────────────────────────────────────────
+function showTravelCountries(){
+  filterTravelCountries('');
+  el('tCountryList').style.display='block';
+}
+
+function filterTravelCountries(q){
+  var list = el('tCountryList');
+  list.innerHTML = '';
+  var filtered = q ? COUNTRIES.filter(function(c){
+    return c.name.toLowerCase().indexOf(q.toLowerCase())!==-1 || c.currency.toLowerCase().indexOf(q.toLowerCase())!==-1;
+  }) : COUNTRIES;
+  filtered.forEach(function(c){
+    var div = document.createElement('div');
+    div.style.cssText = 'padding:11px 16px;font-size:14px;cursor:pointer;border-bottom:1px solid #EAECF0;display:flex;justify-content:space-between;align-items:center';
+    div.innerHTML = '<span>' + esc(c.name) + '</span><span style="font-size:12px;color:#9AAABE;font-weight:700">' + c.currency + ' ' + c.symbol + '</span>';
+    div.addEventListener('mouseover', function(){ this.style.background='#F7F8FA'; });
+    div.addEventListener('mouseout',  function(){ this.style.background=''; });
+    div.addEventListener('click', (function(code){ return function(){ selectTCountry(code); }; })(c.code));
+    list.appendChild(div);
+  });
+  list.style.display = 'block';
+}
+
+function selectTCountry(code){
+  tSelectedCountry = COUNTRIES.find(function(c){return c.code===code;});
+  if(!tSelectedCountry) return;
+  el('tCountrySearch').value = tSelectedCountry.name;
+  el('tCountryList').style.display='none';
+  el('tCurrencyChip').textContent = '💱 '+tSelectedCountry.currency+' ('+tSelectedCountry.symbol+') selected';
+  el('tCurrencyChip').style.display='inline-block';
+  // Fetch exchange rate
+  fetchExchangeRate(tSelectedCountry.currency);
+}
+
+document.addEventListener('click', function(e){
+  var list = el('tCountryList');
+  if(list && !list.contains(e.target) && e.target.id!=='tCountrySearch'){
+    list.style.display='none';
+  }
+});
+
+// ── Exchange rate ──────────────────────────────────────────────────────
+function fetchExchangeRate(currency){
+  if(currency==='PHP'){ tExchangeRate=1; return; }
+  fetch('https://api.frankfurter.app/latest?from='+currency+'&to=PHP')
+    .then(function(r){return r.json();})
+    .then(function(d){
+      if(d.rates && d.rates.PHP){
+        tExchangeRate = d.rates.PHP;
+      }
+    }).catch(function(){ tExchangeRate = null; });
+}
+
+function calcPhpEquiv(){
+  var amt = parseFloat(el('tExpAmount').value)||0;
+  if(tExchangeRate && amt){
+    el('tExpPhp').value = (amt * tExchangeRate).toFixed(2);
+  }
+}
+
+// ── Create trip ────────────────────────────────────────────────────────
+
+
+function switchMainTab(tab){
+  var isDining = tab === 'dining';
+  // Tab button styles
+  el('tabDining').style.color = isDining ? 'var(--accent)' : 'var(--dim)';
+  el('tabDining').style.borderBottom = isDining ? '3px solid var(--accent)' : '3px solid transparent';
+  el('tabTravel').style.color = !isDining ? 'var(--blue)' : 'var(--dim)';
+  el('tabTravel').style.borderBottom = !isDining ? '3px solid var(--blue)' : '3px solid transparent';
+
+  if(isDining){
+    document.body.setAttribute('data-mode','dining');
+    ['s0','s6','s7'].forEach(function(id){
+      var s = el(id); if(s) s.style.display='';
+    });
+    ['tHome','tCreate','tMember','tDash','tLock'].forEach(function(id){
+      var s = el(id); if(s){ s.classList.remove('active'); }
+    });
+    goTo(0);
+    setTimeout(function(){ initOnboard(); }, 200);
+  } else {
+    document.body.setAttribute('data-mode','travel');
+    // Show travel home
+    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+    el('tHome').classList.add('active');
+    window.scrollTo(0,0);
+    loadMyTrips();
+    // Show travel modal every time tab is switched to
+    var tm = el('tOnboardModal');
+    if(tm){
+      tm.style.animation = '';
+      tm.style.display = 'flex';
+      tm.onclick = function(e){ if(e.target===tm) closeTOnboard(); };
+      tm.querySelector('button').onclick = closeTOnboard;
+    }
+  }
+}
+
+function chooseMode(mode){
+  // Fade out welcome screen
+  var ws = el('welcomeScreen');
+  ws.style.transition = 'opacity 0.3s';
+  ws.style.opacity = '0';
+  setTimeout(function(){ ws.style.display='none'; }, 300);
+
+  if(mode === 'dining'){
+    // Show dining onboarding modal then invite gate
+    setTimeout(function(){
+      initInviteGate();
+      // Show dining onboarding after a short delay
+      setTimeout(function(){
+        try{ localStorage.removeItem('splitsies_onboarded'); }catch(e){}
+        initOnboard();
+      }, 400);
+    }, 300);
+  } else {
+    // Travel mode — check if biller
+    setTimeout(function(){
+      // Show travel onboarding modal
+      var m = el('tOnboardModal');
+      // Skip modal from welcome — just proceed to invite gate
+      initInviteGate();
+    }, 300);
+  }
+}
+
+function closeTOnboardAndProceed(){
+  var m = el('tOnboardModal');
+  if(m){
+    m.style.animation = 'fadeOut 0.2s ease forwards';
+    setTimeout(function(){ m.style.display='none'; }, 200);
+  }
+  try{ localStorage.setItem('splitz_travel_onboarded','1'); }catch(e){}
+  window._pendingTab = 'travel';
+  initInviteGate();
+}
+
+function openSampleDash(){
+  // Inject dummy data
+  tCurrentTrip = {
+    id: 'sample',
+    name: 'Osaka Trip 2025 🇯🇵',
+    country: 'Japan',
+    currency: 'JPY',
+    currency_symbol: '¥',
+    slug: 'sample',
+    status: 'active'
+  };
+  tTripUnlocked = true;
+
+  var members = [
+    { id:'m1', name:'Ericka',  bank_name:'GCash', bank_account:'0906 479 6828', bank_account_name:'ES' },
+    { id:'m2', name:'Julius',  bank_name:'BDO',   bank_account:'1234567890',    bank_account_name:'JD' },
+    { id:'m3', name:'Mia',     bank_name:null,    bank_account:null,            bank_account_name:null },
+    { id:'m4', name:'Marco',   bank_name:'GCash', bank_account:'0917 123 4567', bank_account_name:'MA' }
+  ];
+
+  var expenses = [
+    { id:'e1', category:'Transportation',       description:'Shinkansen Tokyo→Osaka', amount_foreign:8800,  amount_php:3800,  currency:'JPY', expense_date:'2025-06-15', split_mode:'equal', paid_by_member_id:'m1', photo_url:null },
+    { id:'e2', category:'Transportation',       description:'Airport Express Train',  amount_foreign:3200,  amount_php:1380,  currency:'JPY', expense_date:'2025-06-14', split_mode:'equal', paid_by_member_id:'m2', photo_url:null },
+    { id:'e3', category:'Accommodation',        description:'APA Hotel Osaka (3 nights)', amount_foreign:55600, amount_php:24000, currency:'JPY', expense_date:'2025-06-14', split_mode:'equal', paid_by_member_id:'m2', photo_url:null },
+    { id:'e4', category:'Pre-Booked Activities',description:'Universal Studios Japan', amount_foreign:9800,  amount_php:4200,  currency:'JPY', expense_date:'2025-06-16', split_mode:'equal', paid_by_member_id:'m1', photo_url:null },
+    { id:'e5', category:'Food & Drinks',        description:'Dotonbori dinner',       amount_foreign:12400, amount_php:5350,  currency:'JPY', expense_date:'2025-06-15', split_mode:'equal', paid_by_member_id:'m3', photo_url:null },
+    { id:'e6', category:'SIM / Data',           description:'SIM cards x4',          amount_foreign:6000,  amount_php:2590,  currency:'JPY', expense_date:'2025-06-14', split_mode:'equal', paid_by_member_id:'m4', photo_url:null },
+    { id:'e7', category:'Entrance Fees',        description:'Osaka Castle',           amount_foreign:1600,  amount_php:690,   currency:'JPY', expense_date:'2025-06-17', split_mode:'equal', paid_by_member_id:'m1', photo_url:null }
+  ];
+
+  // Calculate balances
+  var totalPHP = expenses.reduce(function(s,e){return s+Number(e.amount_php);},0);
+  var balance = { m1:0, m2:0, m3:0, m4:0 };
+  expenses.forEach(function(exp){
+    balance[exp.paid_by_member_id] += Number(exp.amount_php);
+    var share = Number(exp.amount_php) / members.length;
+    members.forEach(function(m){ balance[m.id] -= share; });
+  });
+
+  // Build dashboard HTML directly
+  document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+  el('tDash').classList.add('active');
+  window.scrollTo(0,0);
+
+  el('tDashTitle').textContent = tCurrentTrip.name;
+  el('tDashTotal').textContent = '₱'+totalPHP.toLocaleString('en-PH',{minimumFractionDigits:2});
+  el('tDashMembers').textContent = members.length;
+  el('tDashExpCount').textContent = expenses.length;
+  el('tDashCurrency').textContent = 'JPY ¥';
+  el('tClosedBanner').style.display='none';
+  el('tCloseTripBtn').style.display='block';
+
+  // Sample trip link
+  var appUrl = window.location.origin + window.location.pathname;
+  el('tDashLink').textContent = appUrl + '?trip=sample-trip-abc123';
+
+  // Expenses grouped
+  var sym = '¥';
+  var grouped = {};
+  expenses.forEach(function(e){ if(!grouped[e.category]) grouped[e.category]=[]; grouped[e.category].push(e); });
+  var expHtml = '';
+  Object.keys(grouped).forEach(function(cat){
+    var catTotal = grouped[cat].reduce(function(s,e){return s+Number(e.amount_php);},0);
+    expHtml += '<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin:12px 0 6px;display:flex;justify-content:space-between"><span>'+cat+'</span><span>'+fmt(catTotal)+'</span></div>';
+    grouped[cat].forEach(function(exp){
+      var payer = members.find(function(m){return m.id===exp.paid_by_member_id;});
+      expHtml += '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
+        +'<div><div style="font-size:13px;font-weight:600">'+exp.description+'</div>'
+        +'<div style="font-size:11px;color:var(--dim)">'+(payer?payer.name+' · ':'')+exp.expense_date+'</div></div>'
+        +'<div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--blue)">'+sym+Number(exp.amount_foreign).toLocaleString()+'</div>'
+        +'<div style="font-size:11px;color:var(--dim)">'+fmt(exp.amount_php)+'</div></div></div>';
+    });
+  });
+  el('tDashExpenses').innerHTML = expHtml;
+
+  // Balances
+  el('tDashBalances').innerHTML = members.map(function(m){
+    var bal = balance[m.id]||0;
+    return '<div style="display:flex;justify-content:space-between;padding:10px 0;border-bottom:1px solid var(--border)">'
+      +'<div><div style="font-size:14px;font-weight:700">'+m.name+'</div>'
+      +(m.bank_name?'<div style="font-size:11px;color:var(--dim)">'+m.bank_name+' · '+m.bank_account+'</div>':'<div style="font-size:11px;color:var(--dim)">No bank details</div>')+'</div>'
+      +'<div style="font-size:14px;font-weight:800;color:'+(bal>=0?'var(--accent)':'var(--red)')+';">'+(bal>=0?'Gets '+fmt(bal):'Owes '+fmt(Math.abs(bal)))+'</div>'
+      +'</div>';
+  }).join('');
+
+  // Settlement
+  el('tDashSettlement').innerHTML = members.map(function(m){
+    var bal = balance[m.id]||0;
+    return '<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
+      +'<span style="font-size:13px;font-weight:600">'+m.name+'</span>'
+      +'<span style="font-size:13px;font-weight:800;color:'+(bal>=0?'var(--accent)':'var(--red)')+';">'+(bal>=0?'Gets back ':' Owes ')+fmt(Math.abs(bal))+'</span>'
+      +'</div>';
+  }).join('');
+
+  // Add sample banner at top
+  var existing = document.getElementById('sampleBanner');
+  if(!existing){
+    var banner = document.createElement('div');
+    banner.id = 'sampleBanner';
+    banner.style.cssText = 'background:var(--ybg);border:1px solid rgba(196,124,10,0.2);border-radius:12px;padding:10px 14px;margin-bottom:12px;font-size:12px;color:var(--yellow);font-weight:700;text-align:center';
+    banner.textContent = '👀 This is a sample — dummy data only';
+    el('tDash').insertBefore(banner, el('tDash').firstChild);
+  }
+}
+
+function viewBankDetails(memberId){
+  var members = el('tDash')._members || [];
+  var m = members.find(function(x){return x.id===memberId;});
+  if(!m) return;
+  if(!m.bank_name && !m.bank_account){
+    showToast(m.name+' has not added bank details yet');
+    return;
+  }
+  var overlay = document.createElement('div');
+  overlay.id = 'bankOverlay';
+  overlay.style.cssText = 'position:fixed;inset:0;z-index:2000;background:rgba(0,0,0,0.5);display:flex;align-items:center;justify-content:center;padding:24px;backdrop-filter:blur(4px)';
+  var nameEsc = esc(m.name);
+  overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:340px">'
+    +'<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:6px">View Bank Details</div>'
+    +'<div style="font-size:13px;color:var(--mid);margin-bottom:16px">Enter the trip password to view '+nameEsc+' bank details</div>'
+    +'<div style="position:relative;margin-bottom:14px">'
+    +'<input type="password" id="bankPwdInput" placeholder="Trip password" style="width:100%;background:var(--muted);border:1px solid var(--border);border-radius:10px;padding:12px 44px 12px 14px;font-size:16px;font-family:inherit;outline:none;min-height:48px"/>'
+    +'<button type="button" id="bankEyeBtn" style="position:absolute;right:12px;top:50%;transform:translateY(-50%);background:none;border:none;cursor:pointer;font-size:18px">👁️</button>'
+    +'</div>'
+    +'<div id="bankPwdErr" style="display:none;font-size:12px;color:var(--red);margin-bottom:10px">Wrong password — try again</div>'
+    +'<div style="display:flex;gap:10px">'
+    +'<button id="bankCancelBtn" style="flex:1;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--muted);color:var(--mid);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">Cancel</button>'
+    +'<button id="bankSubmitBtn" style="flex:1;padding:12px;border-radius:12px;border:none;background:linear-gradient(135deg,#1A6FE8,#0055A4);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit">View →</button>'
+    +'</div></div>';
+  document.body.appendChild(overlay);
+  document.getElementById('bankEyeBtn').onclick = function(){ togglePwdVisibility('bankPwdInput', this); };
+  document.getElementById('bankCancelBtn').onclick = function(){ overlay.remove(); };
+  document.getElementById('bankSubmitBtn').onclick = function(){ checkBankPwd(memberId); };
+  overlay.onclick = function(e){ if(e.target===overlay) overlay.remove(); };
+  setTimeout(function(){ var i=el('bankPwdInput'); if(i) i.focus(); }, 100);
+}
+
+function checkBankPwd(memberId){
+  var input = (el('bankPwdInput').value||'').trim();
+  if(!input || !tCurrentTrip) return;
+  if(hashTripPassword(input) !== tCurrentTrip.password_hash){
+    el('bankPwdErr').style.display='block';
+    el('bankPwdInput').value='';
+    return;
+  }
+  var overlay = document.getElementById('bankOverlay');
+  var members = el('tDash')._members || [];
+  var m = members.find(function(x){return x.id===memberId;});
+  if(!m || !overlay) return;
+  overlay.innerHTML = '<div style="background:#fff;border-radius:20px;padding:24px;width:100%;max-width:340px">'
+    +'<div style="font-size:16px;font-weight:800;color:var(--text);margin-bottom:16px">🏦 '+esc(m.name)+' — Bank Details</div>'
+    +'<div style="background:var(--abg);border:1px solid rgba(0,179,122,0.2);border-radius:12px;padding:16px;margin-bottom:16px">'
+    +'<div style="font-size:12px;color:var(--dim);margin-bottom:4px">BANK / PAYMENT METHOD</div>'
+    +'<div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:12px">'+esc(m.bank_name||'—')+'</div>'
+    +'<div style="font-size:12px;color:var(--dim);margin-bottom:4px">ACCOUNT NUMBER</div>'
+    +'<div style="font-size:20px;font-weight:800;color:var(--accent);letter-spacing:0.5px;margin-bottom:12px">'+esc(m.bank_account||'—')+'</div>'
+    +'<div style="font-size:12px;color:var(--dim);margin-bottom:4px">ACCOUNT NAME</div>'
+    +'<div style="font-size:16px;font-weight:700;color:var(--text)">'+esc(m.bank_account_name||'—')+'</div>'
+    +'</div>'
+    +'<div id="bankCopyBtn" style="width:100%;padding:12px;border-radius:12px;border:none;background:var(--accent);color:#fff;font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;margin-bottom:10px;text-align:center">📋 Copy Account Number</div>'
+    +'<div id="bankCloseBtn" style="width:100%;padding:12px;border-radius:12px;border:1px solid var(--border);background:var(--muted);color:var(--mid);font-size:14px;font-weight:700;cursor:pointer;font-family:inherit;text-align:center">Close</div>'
+    +'</div>';
+  var acct = m.bank_account||'';
+  document.getElementById('bankCopyBtn').onclick = function(){ safeCopy(acct, function(){ showToast('✓ Account number copied!','success'); }); };
+  document.getElementById('bankCloseBtn').onclick = function(){ overlay.remove(); };
+}
+
+function closeTOnboard(){
+  var m = el('tOnboardModal');
+  if(!m) return;
+  m.style.animation = 'fadeOut 0.2s ease forwards';
+  setTimeout(function(){ m.style.display='none'; }, 200);
+  try{ localStorage.setItem('splitz_travel_onboarded','1'); }catch(e){}
+}
+
+function showTOnboard(){
+  try{ if(localStorage.getItem('splitz_travel_onboarded')) return; }catch(e){}
+  var m = el('tOnboardModal');
+  m.style.animation = '';
+  m.style.display = 'flex';
+  m.addEventListener('click', function(e){ if(e.target===m) closeTOnboard(); });
+}
+
+function togglePwdVisibility(inputId, btn){
+  var inp = el(inputId);
+  if(!inp) return;
+  var isHidden = inp.type === 'password';
+  inp.type = isHidden ? 'text' : 'password';
+  btn.textContent = isHidden ? '🙈' : '👁️';
+}
+function hashTripPassword(p){
+  var h=0; for(var i=0;i<p.length;i++){h=(h*31+p.charCodeAt(i))>>>0;} return h.toString(36);
+}
+
+function createTrip(){
+  var name  = (el('tName').value||'').trim();
+  var pwd   = (el('tPassword').value||'').trim();
+  var pwd2  = (el('tPasswordConfirm').value||'').trim();
+  var start = el('tStartDate').value;
+  var end   = el('tEndDate').value;
+
+  if(!name){ showToast('Please enter a trip name'); return; }
+  if(!tSelectedCountry){ showToast('Please select a destination country'); return; }
+  if(!start){ showToast('Please enter a start date'); return; }
+  if(!end){ showToast('Please enter an end date'); return; }
+  if(end < start){ showToast('End date must be after start date'); return; }
+  if(!pwd){ showToast('Please create a password'); return; }
+  if(pwd !== pwd2){ showToast('Passwords do not match'); return; }
+  if(pwd.length < 4){ showToast('Password must be at least 4 characters'); return; }
+
+  var slug = 'trip-'+Math.random().toString(36).slice(2,10);
+  var body = {
+    name: name,
+    country: tSelectedCountry.name,
+    currency: tSelectedCountry.currency,
+    currency_symbol: tSelectedCountry.symbol,
+    slug: slug,
+    password_hash: hashTripPassword(pwd),
+    start_date: start||null,
+    end_date: end||null,
+    status: 'active'
+  };
+
+  supaPost('trips', body).then(function(rows){
+    if(!rows || !rows[0]){ showToast('Could not create trip — try again'); return; }
+    tCurrentTrip = rows[0];
+    tTripUnlocked = true;
+    try{ sessionStorage.setItem('splitz_trip_'+rows[0].id+'_unlocked','1'); }catch(e){}
+    // Save trip id to localStorage
+    try{
+      var ids = JSON.parse(localStorage.getItem('splitz_trip_ids')||'[]');
+      ids.push(rows[0].id);
+      localStorage.setItem('splitz_trip_ids', JSON.stringify(ids));
+    }catch(e){}
+
+    var appUrl = window.location.origin + window.location.pathname;
+    var fullUrl = appUrl + '?trip=' + slug;
+    el('tLinkUrl').textContent = fullUrl;
+    el('tLinkReady').style.display = 'block';
+    el('tDashTitle').textContent = name;
+    safeCopy(fullUrl, function(){
+      el('tCopyBtn').textContent = '✓ Link Copied!';
+      setTimeout(function(){ el('tCopyBtn').textContent = '📋 Copy & Send to Crew'; }, 3000);
+    });
+  });
+}
+
+function copyTripLink(){
+  var url = el('tLinkUrl').textContent.trim();
+  safeCopy(url, function(){
+    el('tCopyBtn').textContent='✓ Copied!';
+    setTimeout(function(){ el('tCopyBtn').textContent='📋 Copy & Send to Crew'; },2000);
+  });
+}
+
+function copyTDashLink(){
+  var url = (el('tDashLink').textContent||'').trim();
+  safeCopy(url, function(){ showToast('✓ Link copied!','success'); });
+}
+
+// ── Load my trips ─────────────────────────────────────────────────────
+function loadMyTrips(){
+  var ids = null;
+  try{ ids = JSON.parse(localStorage.getItem('splitz_trip_ids')||'[]'); }catch(e){}
+  if(!ids || !ids.length){ el('tMyTrips').style.display='none'; return; }
+
+  supaGet('trips?id=in.('+ids.join(',')+')'+'&order=created_at.desc&select=*').then(function(trips){
+    if(!trips || !trips.length){ el('tMyTrips').style.display='none'; return; }
+    el('tMyTrips').style.display='block';
+    el('tTripList').innerHTML='';
+    trips.forEach(function(t){
+      var isClosed = t.status==='closed';
+      var div=document.createElement('div');
+      div.style.cssText='background:#fff;border:1.5px solid '+(isClosed?'#EAECF0':'rgba(26,111,232,0.2)')+';border-radius:14px;padding:14px 16px;margin-bottom:10px;cursor:pointer';
+      div.innerHTML='<div style="display:flex;justify-content:space-between;align-items:center">'
+        +'<div style="font-size:15px;font-weight:700;color:#0F1F3D">'+esc(t.name)+'</div>'
+        +'<span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:20px;background:'+(isClosed?'#F7F8FA':'rgba(26,111,232,0.08)')+';color:'+(isClosed?'#9AAABE':'#1A6FE8')+';">'+(isClosed?'Closed':'Active')+'</span>'
+        +'</div>'
+        +'<div style="font-size:12px;color:#9AAABE;margin-top:4px">'+esc(t.country)+' · '+t.currency+'</div>';
+      div.addEventListener('click',(function(id){return function(){openMyTrip(id);};})(t.id));
+      el('tTripList').appendChild(div);
+    });
+  });
+}
+
+function openMyTrip(tripId){
+  supaGet('trips?id=eq.'+tripId+'&select=*').then(function(rows){
+    if(!rows||!rows[0]) return;
+    tCurrentTrip = rows[0];
+    // Check if already unlocked this session
+    try{
+      if(sessionStorage.getItem('splitz_trip_'+tripId+'_unlocked')==='1'){
+        tTripUnlocked = true;
+        document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+        el('tDash').classList.add('active');
+        el('tDashTitle').textContent = tCurrentTrip.name;
+        var appUrl = window.location.origin + window.location.pathname;
+        el('tDashLink').textContent = appUrl + '?trip=' + tCurrentTrip.slug;
+        renderTDash();
+        return;
+      }
+    }catch(e){}
+    // Need password
+    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+    el('tLock').classList.add('active');
+    el('tLockInput').value='';
+    window.scrollTo(0,0);
+  });
+}
+
+// ── Password lock ─────────────────────────────────────────────────────
+function checkTripPassword(){
+  var input = (el('tLockInput').value||'').trim();
+  if(!input || !tCurrentTrip) return;
+  if(hashTripPassword(input) === tCurrentTrip.password_hash){
+    tTripUnlocked = true;
+    try{ sessionStorage.setItem('splitz_trip_'+tCurrentTrip.id+'_unlocked','1'); }catch(e){}
+    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+    el('tDash').classList.add('active');
+    el('tDashTitle').textContent = tCurrentTrip.name;
+    var appUrl = window.location.origin + window.location.pathname;
+    el('tDashLink').textContent = appUrl + '?trip=' + tCurrentTrip.slug;
+    renderTDash();
+  } else {
+    el('tLockSub').textContent = '❌ Wrong password — try again';
+    el('tLockSub').style.color = 'var(--red)';
+    el('tLockInput').value='';
+    setTimeout(function(){
+      el('tLockSub').textContent='Enter your trip password';
+      el('tLockSub').style.color='';
+    }, 1500);
+  }
+}
+
+// ── Member flow (open via link) ───────────────────────────────────────
+function loadTripBySlug(slug, cb){
+  supaGet('trips?slug=eq.'+slug+'&select=*').then(function(rows){
+    if(!rows||!rows[0]){ if(cb) cb(null); return; }
+    tCurrentTrip = rows[0];
+    tExchangeRate = null;
+    if(tCurrentTrip.currency !== 'PHP') fetchExchangeRate(tCurrentTrip.currency);
+    if(cb) cb(tCurrentTrip);
+  });
+}
+
+function renderMemberView(){
+  if(!tCurrentTrip) return;
+  el('tMemberHost').textContent = tCurrentTrip.name;
+  el('tMemberTitle').textContent = tCurrentTrip.name;
+  el('tMemberSub').textContent = tCurrentTrip.country + ' · ' + tCurrentTrip.currency;
+
+  // Load saved member name
+  var savedName = null;
+  try{ savedName = localStorage.getItem('splitz_tmember_'+tCurrentTrip.id); }catch(e){}
+  if(savedName){
+    // Already joined — skip to expense view
+    supaGet('trip_members?trip_id=eq.'+tCurrentTrip.id+'&name=eq.'+encodeURIComponent(savedName)+'&select=*').then(function(rows){
+      if(rows && rows[0]){
+        tCurrentMember = rows[0];
+        showTMemberExpenses();
+      } else {
+        showTJoinSection(savedName);
+      }
+    });
+  } else {
+    showTJoinSection('');
+  }
+}
+
+function showTJoinSection(name){
+  el('tJoinSection').style.display='block';
+  el('tExpenseSection').style.display='none';
+  if(name) el('tMemberName').value = name;
+}
+
+function onTMemberNameInput(){
+  var name = (el('tMemberName').value||'').trim();
+  el('tJoinBtn').disabled = !name;
+}
+
+function clearTMemberName(){
+  try{ localStorage.removeItem('splitz_tmember_'+tCurrentTrip.id); }catch(e){}
+  tCurrentMember = null;
+  el('tMemberName').value='';
+  el('tMemberNameHint').style.display='none';
+  el('tJoinBtn').disabled=true;
+}
+
+function joinTrip(){
+  var name = (el('tMemberName').value||'').trim();
+  if(!name||!tCurrentTrip) return;
+
+  // Check if member already exists
+  supaGet('trip_members?trip_id=eq.'+tCurrentTrip.id+'&name=eq.'+encodeURIComponent(name)+'&select=*').then(function(rows){
+    if(rows && rows[0]){
+      tCurrentMember = rows[0];
+      try{ localStorage.setItem('splitz_tmember_'+tCurrentTrip.id, name); }catch(e){}
+      showTMemberExpenses();
+    } else {
+      // Create new member
+      supaPost('trip_members', { trip_id: tCurrentTrip.id, name: name }).then(function(mrows){
+        if(mrows && mrows[0]){
+          tCurrentMember = mrows[0];
+          try{ localStorage.setItem('splitz_tmember_'+tCurrentTrip.id, name); }catch(e){}
+          showTMemberExpenses();
+        }
+      });
+    }
+  });
+}
+
+function showTMemberExpenses(){
+  el('tJoinSection').style.display='none';
+  el('tExpenseSection').style.display='block';
+  el('tMemberNameHint').style.display='block';
+  loadTripExpenses();
+}
+
+// ── Load & render expenses ─────────────────────────────────────────────
+function loadTripExpenses(){
+  if(!tCurrentTrip) return;
+  Promise.all([
+    supaGet('trip_members?trip_id=eq.'+tCurrentTrip.id+'&order=joined_at.asc&select=*'),
+    supaGet('trip_expenses?trip_id=eq.'+tCurrentTrip.id+'&order=expense_date.asc,created_at.asc&select=*'),
+    supaGet('trip_expense_splits?expense_id=in.(select id from trip_expenses where trip_id=eq.'+tCurrentTrip.id+')&select=*')
+  ]).then(function(results){
+    var members  = results[0]||[];
+    var expenses = results[1]||[];
+    var splits   = results[2]||[];
+    renderTExpenses(members, expenses, splits);
+    renderTSettlement(members, expenses, splits);
+    renderTMyBalance(members, expenses, splits);
+  }).catch(function(){
+    // Fallback without splits join
+    Promise.all([
+      supaGet('trip_members?trip_id=eq.'+tCurrentTrip.id+'&order=joined_at.asc&select=*'),
+      supaGet('trip_expenses?trip_id=eq.'+tCurrentTrip.id+'&order=expense_date.asc,created_at.asc&select=*')
+    ]).then(function(results){
+      renderTExpenses(results[0]||[], results[1]||[], []);
+      renderTSettlement(results[0]||[], results[1]||[], []);
+      renderTMyBalance(results[0]||[], results[1]||[], []);
+    });
+  });
+}
+
+function fmtForeign(amt, sym){ return sym + Number(amt).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
+
+function renderTExpenses(members, expenses, splits){
+  var sym = tCurrentTrip.currency_symbol || '';
+  if(!expenses.length){
+    el('tExpenseList').innerHTML = '<div style="text-align:center;padding:20px 0;color:var(--dim);font-size:13px">No expenses yet — tap + Add to start</div>';
+    return;
+  }
+  // Group by category
+  var grouped = {};
+  expenses.forEach(function(e){
+    if(!grouped[e.category]) grouped[e.category]=[]; grouped[e.category].push(e);
+  });
+  var html = '';
+  Object.keys(grouped).forEach(function(cat){
+    html += '<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin:12px 0 6px">'+cat+'</div>';
+    grouped[cat].forEach(function(exp){
+      var payer = members.find(function(m){return m.id===exp.paid_by_member_id;});
+      html += '<div style="background:#fff;border:1px solid var(--border);border-radius:12px;padding:12px 14px;margin-bottom:8px">'
+        +'<div style="display:flex;justify-content:space-between;align-items:flex-start">'
+        +'<div style="flex:1;min-width:0">'
+        +'<div style="font-size:14px;font-weight:600;color:var(--text)">'+esc(exp.description||cat)+'</div>'
+        +'<div style="font-size:11px;color:var(--dim);margin-top:3px">'
+        +(payer?'Paid by <strong>'+esc(payer.name)+'</strong>':'')
+        +' · '+exp.expense_date
+        +'</div>'
+        +'<div style="font-size:11px;color:var(--mid);margin-top:2px">'+(exp.split_mode==='equal'?'Split equally':'Custom split')+'</div>'
+        +'</div>'
+        +'<div style="text-align:right;flex-shrink:0;margin-left:12px">'
+        +'<div style="font-size:15px;font-weight:800;color:var(--blue)">'+fmtForeign(exp.amount_foreign,sym)+'</div>'
+        +'<div style="font-size:11px;color:var(--dim)">≈ '+fmt(exp.amount_php)+'</div>'
+        +'</div>'
+        +'</div>'
+        +(exp.photo_url?'<img src="'+exp.photo_url+'" style="width:100%;border-radius:8px;margin-top:8px;max-height:120px;object-fit:cover"/>':'')
+        +'</div>';
+    });
+  });
+  el('tExpenseList').innerHTML = html;
+}
+
+function renderTSettlement(members, expenses, splits){
+  if(!members.length || !expenses.length){
+    el('tSettlementList').innerHTML = '<div style="font-size:13px;color:var(--dim);padding:8px 0">Add expenses to see who owes what.</div>';
+    return;
+  }
+
+  // Calculate balance per member: paid - owed
+  var balance = {}; // memberId -> net (positive = owed to them, negative = they owe)
+  members.forEach(function(m){ balance[m.id]=0; });
+
+  expenses.forEach(function(exp){
+    // Credit the payer
+    if(exp.paid_by_member_id && balance[exp.paid_by_member_id]!==undefined){
+      balance[exp.paid_by_member_id] += Number(exp.amount_php);
+    }
+    // Debit each member's share
+    if(exp.split_mode==='equal'){
+      var share = Number(exp.amount_php) / members.length;
+      members.forEach(function(m){ balance[m.id] -= share; });
+    } else {
+      // Custom split — use splits table
+      splits.filter(function(s){return s.expense_id===exp.id;}).forEach(function(s){
+        if(balance[s.member_id]!==undefined) balance[s.member_id] -= Number(s.share_amount);
+      });
+    }
+  });
+
+  var sym = tCurrentTrip.currency_symbol||'';
+  var html = members.map(function(m){
+    var bal = balance[m.id]||0;
+    var isPositive = bal >= 0;
+    var bankInfo = m.bank_name ? m.bank_name+' · '+m.bank_account : null;
+    return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">'
+      +'<div>'
+      +'<div style="font-size:14px;font-weight:700">'+esc(m.name)+'</div>'
+      +(bankInfo?'<div style="font-size:11px;color:var(--dim)">'+esc(bankInfo)+'</div>':'')
+      +'</div>'
+      +'<div style="text-align:right">'
+      +'<div style="font-size:14px;font-weight:800;color:'+(isPositive?'var(--accent)':'var(--red)')+';">'
+      +(isPositive?'Gets back ':'Owes ')+fmt(Math.abs(bal))
+      +'</div>'
+      +'</div>'
+      +'</div>';
+  }).join('');
+  el('tSettlementList').innerHTML = html;
+}
+
+function renderTMyBalance(members, expenses, splits){
+  if(!tCurrentMember) return;
+  var balance = {};
+  members.forEach(function(m){ balance[m.id]=0; });
+  expenses.forEach(function(exp){
+    if(exp.paid_by_member_id && balance[exp.paid_by_member_id]!==undefined){
+      balance[exp.paid_by_member_id] += Number(exp.amount_php);
+    }
+    if(exp.split_mode==='equal'){
+      var share = Number(exp.amount_php) / members.length;
+      members.forEach(function(m){ balance[m.id] -= share; });
+    } else {
+      splits.filter(function(s){return s.expense_id===exp.id;}).forEach(function(s){
+        if(balance[s.member_id]!==undefined) balance[s.member_id] -= Number(s.share_amount);
+      });
+    }
+  });
+  var myBal = balance[tCurrentMember.id]||0;
+  el('tMyBalance').style.display='block';
+  el('tMyShareAmt').textContent = (myBal>=0?'Gets back ':' Owes ') + fmt(Math.abs(myBal));
+  el('tMyShareAmt').style.color = myBal>=0?'var(--accent)':'var(--red)';
+  el('tMyShareDetail').textContent = 'Your net balance across all expenses';
+}
+
+// ── Add expense ────────────────────────────────────────────────────────
+function openAddExpense(){
+  if(!tCurrentMember){ showToast('Please join the trip first'); return; }
+  // Set today's date
+  el('tExpDate').value = new Date().toISOString().split('T')[0];
+  el('tExpAmount').value='';
+  el('tExpPhp').value='';
+  el('tExpDesc').value='';
+  el('tExpPhotoLabel').textContent='No photo attached';
+  tExpPhotoData=null;
+  tExpSplitMode='equal';
+  el('tExpTabEqual').className='stab active';
+  el('tExpTabCustom').className='stab';
+  el('tExpMemberPicks').style.display='none';
+  el('tExpCurrLabel').textContent = tCurrentTrip.currency;
+  // Render member picks
+  supaGet('trip_members?trip_id=eq.'+tCurrentTrip.id+'&select=*').then(function(members){
+    el('tExpMemberPicks').innerHTML = (members||[]).map(function(m){
+      var isMe = tCurrentMember && m.id===tCurrentMember.id;
+      return '<label style="display:flex;align-items:center;gap:10px;padding:8px 0;cursor:pointer">'
+        +'<input type="checkbox" id="tExpMember_'+m.id+'" '+(isMe?'checked':'')+' style="width:18px;height:18px;accent-color:var(--accent)"/>'
+        +'<span style="font-size:14px;font-weight:600">'+esc(m.name)+(isMe?' (you)':'')+'</span>'
+        +'</label>';
+    }).join('');
+  });
+  el('tAddExpenseModal').style.display='flex';
+}
+
+function closeTAddExpense(){
+  el('tAddExpenseModal').style.display='none';
+}
+
+function setTExpMode(m){
+  tExpSplitMode=m;
+  el('tExpTabEqual').className='stab'+(m==='equal'?' active':'');
+  el('tExpTabCustom').className='stab'+(m==='custom'?' active':'');
+  el('tExpMemberPicks').style.display=m==='custom'?'block':'none';
+}
+
+function onTExpPhotoChange(e){
+  var file=e.target.files[0];
+  if(!file) return;
+  var reader=new FileReader();
+  reader.onload=function(ev){ tExpPhotoData=ev.target.result; el('tExpPhotoLabel').textContent='✓ Photo attached'; };
+  reader.readAsDataURL(file);
+}
+
+function submitTExpense(){
+  var desc   = (el('tExpDesc').value||'').trim();
+  var cat    = el('tExpCategory').value;
+  var amtF   = parseFloat(el('tExpAmount').value)||0;
+  var amtPHP = parseFloat(el('tExpPhp').value)||0;
+  var date   = el('tExpDate').value;
+
+  if(!amtF){ showToast('Please enter an amount'); return; }
+  if(!date){ showToast('Please enter a date'); return; }
+  if(!tCurrentMember){ showToast('Please join the trip first'); return; }
+
+  var expBody = {
+    trip_id:            tCurrentTrip.id,
+    paid_by_member_id:  tCurrentMember.id,
+    category:           cat,
+    description:        desc||cat,
+    amount_foreign:     amtF,
+    amount_php:         amtPHP||amtF,
+    currency:           tCurrentTrip.currency,
+    expense_date:       date,
+    split_mode:         tExpSplitMode,
+    photo_url:          tExpPhotoData||null
+  };
+
+  supaPost('trip_expenses', expBody).then(function(rows){
+    if(!rows||!rows[0]){ showToast('Could not save expense'); return; }
+    var expId = rows[0].id;
+    closeTAddExpense();
+
+    // Save splits
+    if(tExpSplitMode==='custom'){
+      supaGet('trip_members?trip_id=eq.'+tCurrentTrip.id+'&select=*').then(function(members){
+        var selected = (members||[]).filter(function(m){
+          var cb = document.getElementById('tExpMember_'+m.id);
+          return cb && cb.checked;
+        });
+        if(!selected.length){ loadTripExpenses(); return; }
+        var shareAmt = amtPHP / selected.length;
+        Promise.all(selected.map(function(m){
+          return supaPost('trip_expense_splits', { expense_id: expId, member_id: m.id, share_amount: shareAmt });
+        })).then(function(){ loadTripExpenses(); });
+      });
+    } else {
+      loadTripExpenses();
+    }
+    showToast('✓ Expense added!','success');
+  });
+}
+
+// ── Bank details ───────────────────────────────────────────────────────
+function toggleBankDetails(){
+  var card = el('tBankCard');
+  var isHidden = card.style.display==='none'||card.style.display==='';
+  card.style.display = isHidden?'block':'none';
+  el('tBankToggleLabel').textContent = isHidden?'Hide Bank Details':'Add My Bank Details';
+  if(isHidden && tCurrentMember){
+    el('tBankName').value = tCurrentMember.bank_name||'';
+    el('tBankAccount').value = tCurrentMember.bank_account||'';
+    el('tBankAccountName').value = tCurrentMember.bank_account_name||'';
+  }
+}
+
+function saveBankDetails(){
+  if(!tCurrentMember) return;
+  var bank = (el('tBankName').value||'').trim();
+  var acct = (el('tBankAccount').value||'').trim();
+  var name = (el('tBankAccountName').value||'').trim();
+  supaPatch('trip_members?id=eq.'+tCurrentMember.id, { bank_name:bank, bank_account:acct, bank_account_name:name }).then(function(){
+    tCurrentMember.bank_name=bank; tCurrentMember.bank_account=acct; tCurrentMember.bank_account_name=name;
+    showToast('✓ Bank details saved!','success');
+    toggleBankDetails();
+    loadTripExpenses();
+  });
+}
+
+// ── Organizer dashboard ────────────────────────────────────────────────
+function renderTDash(){
+  if(!tCurrentTrip) return;
+  var isClosed = tCurrentTrip.status==='closed';
+  el('tClosedBanner').style.display = isClosed?'block':'none';
+  el('tCloseTripBtn').style.display = isClosed?'none':'block';
+
+  Promise.all([
+    supaGet('trip_members?trip_id=eq.'+tCurrentTrip.id+'&order=joined_at.asc&select=*'),
+    supaGet('trip_expenses?trip_id=eq.'+tCurrentTrip.id+'&order=expense_date.asc,created_at.asc&select=*')
+  ]).then(function(results){
+    var members  = results[0]||[];
+    var expenses = results[1]||[];
+    var totalPHP = expenses.reduce(function(s,e){return s+Number(e.amount_php);},0);
+
+    el('tDashTotal').textContent = fmt(totalPHP);
+    el('tDashMembers').textContent = members.length;
+    el('tDashExpCount').textContent = expenses.length;
+    el('tDashCurrency').textContent = tCurrentTrip.currency+' '+tCurrentTrip.currency_symbol;
+
+    // Balances
+    var balance = {};
+    members.forEach(function(m){ balance[m.id]=0; });
+    expenses.forEach(function(exp){
+      if(exp.paid_by_member_id && balance[exp.paid_by_member_id]!==undefined){
+        balance[exp.paid_by_member_id] += Number(exp.amount_php);
+      }
+      var share = Number(exp.amount_php)/members.length;
+      members.forEach(function(m){ balance[m.id]-=share; });
+    });
+
+    // Who Paid Upfront — show total each member paid
+    var paidUpfront = {};
+    members.forEach(function(m){ paidUpfront[m.id]=0; });
+    expenses.forEach(function(exp){
+      if(exp.paid_by_member_id && paidUpfront[exp.paid_by_member_id]!==undefined){
+        paidUpfront[exp.paid_by_member_id] += Number(exp.amount_php);
+      }
+    });
+    el('tDashBalances').innerHTML = members.length ? members.map(function(m){
+      var paid = paidUpfront[m.id]||0;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">'
+        +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+esc(m.name)+'</div>'
+        +'<div style="font-size:15px;font-weight:800;color:'+(paid>0?'var(--blue)':'var(--dim)')+'">'+fmt(paid)+'</div>'
+        +'</div>';
+    }).join('') : '<div style="color:var(--dim);font-size:13px;padding:8px 0">No members yet.</div>';
+
+    // Expenses grouped by category
+    var sym = tCurrentTrip.currency_symbol||'';
+    var grouped = {};
+    expenses.forEach(function(e){ if(!grouped[e.category]) grouped[e.category]=[]; grouped[e.category].push(e); });
+    var expHtml = '';
+    Object.keys(grouped).forEach(function(cat){
+      var catTotal = grouped[cat].reduce(function(s,e){return s+Number(e.amount_php);},0);
+      expHtml += '<div style="font-size:11px;font-weight:700;color:var(--dim);letter-spacing:1px;text-transform:uppercase;margin:12px 0 6px;display:flex;justify-content:space-between"><span>'+cat+'</span><span>'+fmt(catTotal)+'</span></div>';
+      grouped[cat].forEach(function(exp){
+        var payer=members.find(function(m){return m.id===exp.paid_by_member_id;});
+        expHtml+='<div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--border)">'
+          +'<div><div style="font-size:13px;font-weight:600">'+esc(exp.description)+'</div>'
+          +'<div style="font-size:11px;color:var(--dim)">'+(payer?esc(payer.name)+' · ':'')+exp.expense_date+'</div></div>'
+          +'<div style="text-align:right"><div style="font-size:13px;font-weight:700;color:var(--blue)">'+fmtForeign(exp.amount_foreign,sym)+'</div>'
+          +'<div style="font-size:11px;color:var(--dim)">'+fmt(exp.amount_php)+'</div></div></div>';
+      });
+    });
+    el('tDashExpenses').innerHTML = expHtml||'<div style="color:var(--dim);font-size:13px;padding:8px 0">No expenses yet.</div>';
+
+    // Settlement & bank details
+    var settleHtml = members.map(function(m){
+      var bal=balance[m.id]||0;
+      var hasBankDetails = m.bank_name||m.bank_account;
+      return '<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid var(--border)">'
+        +'<div>'
+        +'<div style="font-size:14px;font-weight:700;color:var(--text)">'+esc(m.name)+'</div>'
+        +'<div class="tBankLink" data-mid="'+m.id+'" style="font-size:11px;color:var(--blue);font-weight:700;cursor:pointer;margin-top:3px">'
+        +(hasBankDetails?'🏦 View Bank Details':'🏦 No bank details added')+'</div>'
+        +'</div>'
+        +'<div style="font-size:15px;font-weight:800;color:'+(bal>=0?'var(--accent)':'var(--red)')+';">'
+        +(bal>=0?'Gets back '+fmt(bal):'Owes '+fmt(Math.abs(bal)))
+        +'</div>'
+        +'</div>';
+    }).join('');
+    el('tDashSettlement').innerHTML = settleHtml||'<div style="color:var(--dim);font-size:13px">No data yet.</div>';
+    // Store members for bank detail lookup
+    el('tDash')._members = members;
+    // Use event delegation for bank detail links
+    el('tDashSettlement').onclick = function(e){
+      var link = e.target.closest('.tBankLink');
+      if(link) viewBankDetails(link.getAttribute('data-mid'));
+    };
+  });
+}
+
+function closeTripConfirm(){
+  showDeleteConfirm('Close this trip? Members will see it as settled. You can still view it but cannot add new expenses.', function(){
+    supaPatch('trips?id=eq.'+tCurrentTrip.id, { status:'closed' }).then(function(){
+      tCurrentTrip.status='closed';
+      showToast('✓ Trip closed!','success');
+      renderTDash();
+    });
+  });
+}
+
+// ── DOMContentLoaded — handle ?trip= slug ─────────────────────────────
+// This runs inside the existing DOMContentLoaded — we hook into it
+var _origInit = window._splitzInit;
+document.addEventListener('DOMContentLoaded', function(){
+  var urlParams = new URLSearchParams(window.location.search);
+  var tripSlug  = urlParams.get('trip');
+  if(tripSlug){
+    billerMode = false;
+
+    el('navBar').style.display = 'none';
+    document.body.setAttribute('data-mode','travel');
+    document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active');});
+    el('tMember').classList.add('active');
+    el('tMemberTitle').textContent = 'Loading trip…';
+    loadTripBySlug(tripSlug, function(trip){
+      if(!trip){
+        el('tMemberTitle').textContent = 'Trip Not Found';
+        el('tMemberSub').textContent = 'This link may be invalid or expired';
+        return;
+      }
+      renderMemberView();
+    });
+  }
+}, false);
+
+</script>
