@@ -68,10 +68,12 @@ input[type=number]::-webkit-inner-spin-button,
 input[type=number]::-webkit-outer-spin-button{-webkit-appearance:none}
 select{
   width:100%;background:var(--muted);border:1px solid var(--border);
-  border-radius:10px;color:var(--text);padding:12px 14px;
+  border-radius:10px;color:var(--text);padding:12px 40px 12px 14px;
   font-size:16px;font-family:inherit;outline:none;
   -webkit-appearance:none;appearance:none;
   min-height:48px;cursor:pointer;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='8' viewBox='0 0 12 8'%3E%3Cpath d='M1 1l5 5 5-5' stroke='%235A6A85' stroke-width='2' fill='none' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:right 14px center;background-size:12px;
 }
 select:focus{border-color:var(--accent)}
 .field{margin-bottom:12px}
@@ -2771,7 +2773,7 @@ document.addEventListener('DOMContentLoaded', function(){
 
     <div class="field">
       <label class="flabel">Category</label>
-      <select id="tExpCategory" style="width:100%;background:var(--muted);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-size:16px;font-family:inherit;outline:none;min-height:48px">
+      <select id="tExpCategory">
         <option value="Transportation">🚌 Transportation</option>
         <option value="Accommodation">🏨 Accommodation</option>
         <option value="Pre-Booked Activities">🎡 Pre-Booked Activities</option>
@@ -3108,21 +3110,30 @@ document.addEventListener('click', function(e){
 });
 
 // ── Exchange rate ──────────────────────────────────────────────────────
+// Static approximate rates: 1 unit of the foreign currency = X PHP. These are
+// ballpark estimates (not live) so the app needs no forex API — zero API cost
+// and it always works offline. Refresh these numbers occasionally if they drift.
+var STATIC_PHP_RATES = {
+  PHP:1, USD:58, EUR:63, JPY:0.38, KRW:0.043, GBP:74, AUD:38, SGD:43,
+  THB:1.65, HKD:7.4, TWD:1.8, CNY:8.0, MYR:12.5, IDR:0.0036, VND:0.0023,
+  CAD:42, NZD:35, AED:15.8, CHF:66
+};
+function rateFor(currency){
+  var r = STATIC_PHP_RATES[currency];
+  return (typeof r === 'number') ? r : null;
+}
 function fetchExchangeRate(currency){
-  if(currency==='PHP'){ tExchangeRate=1; return; }
-  fetch('https://api.frankfurter.app/latest?from='+currency+'&to=PHP')
-    .then(function(r){return r.json();})
-    .then(function(d){
-      if(d.rates && d.rates.PHP){
-        tExchangeRate = d.rates.PHP;
-      }
-    }).catch(function(){ tExchangeRate = null; });
+  tExchangeRate = rateFor(currency);
 }
 
 function calcPhpEquiv(){
   var amt = parseFloat(el('tExpAmount').value)||0;
-  if(tExchangeRate && amt){
-    el('tExpPhp').value = (amt * tExchangeRate).toFixed(2);
+  var rate = tExchangeRate;
+  if(rate == null && tCurrentTrip) rate = rateFor(tCurrentTrip.currency);
+  if(rate && amt){
+    el('tExpPhp').value = (amt * rate).toFixed(2);
+  } else if(!amt){
+    el('tExpPhp').value = '';
   }
 }
 
@@ -3914,13 +3925,19 @@ function submitTExpense(){
   if(!date){ showToast('Please enter a date'); return; }
   if(!tCurrentMember){ showToast('Please join the trip first'); return; }
 
+  // Always derive the PHP amount from the (static) rate so we never store a
+  // wrong 1:1 value when the PHP field was left blank. Respect a manual PHP
+  // entry if the user typed one; otherwise convert; last resort keep foreign.
+  var rate = tExchangeRate; if(rate == null) rate = rateFor(tCurrentTrip.currency);
+  var phpAmount = amtPHP || (rate ? amtF * rate : amtF);
+
   var expBody = {
     trip_id:            tCurrentTrip.id,
     paid_by_member_id:  tCurrentMember.id,
     category:           cat,
     description:        desc||cat,
     amount_foreign:     amtF,
-    amount_php:         amtPHP||amtF,
+    amount_php:         phpAmount,
     currency:           tCurrentTrip.currency,
     expense_date:       date,
     split_mode:         tExpSplitMode,
@@ -3940,7 +3957,7 @@ function submitTExpense(){
           return cb && cb.checked;
         });
         if(!selected.length){ loadTripExpenses(); return; }
-        var shareAmt = (amtPHP||amtF) / selected.length;
+        var shareAmt = phpAmount / selected.length;
         Promise.all(selected.map(function(m){
           return supaPost('trip_expense_splits', { expense_id: expId, member_id: m.id, share_amount: shareAmt });
         })).then(function(){ loadTripExpenses(); });
