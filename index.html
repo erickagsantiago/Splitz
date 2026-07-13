@@ -3032,7 +3032,18 @@ function goToTravelCreate(){
   el('tCreate').classList.add('active');
   window.scrollTo(0,0);
   updateNav('T');
-  // Set today as default expense date
+  // Reset the form so a previous trip's details never carry over
+  el('tName').value = '';
+  el('tPassword').value = '';
+  el('tPasswordConfirm').value = '';
+  el('tCountrySearch').value = '';
+  el('tEndDate').value = '';
+  tSelectedCountry = null;
+  tExchangeRate = null;
+  el('tCurrencyChip').style.display = 'none';
+  el('tCountryList').style.display = 'none';
+  el('tLinkReady').style.display = 'none';
+  // Set today as default start date
   var today = new Date().toISOString().split('T')[0];
   el('tStartDate').value = today;
 }
@@ -3631,26 +3642,54 @@ function loadTripExpenses(){
   if(!tCurrentTrip) return;
   Promise.all([
     supaGet('trip_members?trip_id=eq.'+tCurrentTrip.id+'&order=joined_at.asc&select=*'),
-    supaGet('trip_expenses?trip_id=eq.'+tCurrentTrip.id+'&order=expense_date.asc,created_at.asc&select=*'),
-    supaGet('trip_expense_splits?expense_id=in.(select id from trip_expenses where trip_id=eq.'+tCurrentTrip.id+')&select=*')
+    supaGet('trip_expenses?trip_id=eq.'+tCurrentTrip.id+'&order=expense_date.asc,created_at.asc&select=*')
   ]).then(function(results){
-    var members  = results[0]||[];
-    var expenses = results[1]||[];
-    var splits   = results[2]||[];
-    renderTExpenses(members, expenses, splits);
-    renderTSettlement(members, expenses, splits);
-    renderTMyBalance(members, expenses, splits);
-  }).catch(function(){
-    // Fallback without splits join
-    Promise.all([
-      supaGet('trip_members?trip_id=eq.'+tCurrentTrip.id+'&order=joined_at.asc&select=*'),
-      supaGet('trip_expenses?trip_id=eq.'+tCurrentTrip.id+'&order=expense_date.asc,created_at.asc&select=*')
-    ]).then(function(results){
-      renderTExpenses(results[0]||[], results[1]||[], []);
-      renderTSettlement(results[0]||[], results[1]||[], []);
-      renderTMyBalance(results[0]||[], results[1]||[], []);
+    var members  = Array.isArray(results[0])?results[0]:[];
+    var expenses = Array.isArray(results[1])?results[1]:[];
+    fetchTripSplits(expenses, function(splits){
+      renderTExpenses(members, expenses, splits);
+      renderTSettlement(members, expenses, splits);
+      renderTMyBalance(members, expenses, splits);
     });
   });
+}
+
+// PostgREST does not support SQL subqueries in `in.()`, so fetch the split
+// rows by explicit expense-id list after the expenses are loaded.
+function fetchTripSplits(expenses, cb){
+  var ids = expenses.filter(function(e){ return e.split_mode==='custom'; })
+                    .map(function(e){ return e.id; });
+  if(!ids.length){ cb([]); return; }
+  supaGet('trip_expense_splits?expense_id=in.('+ids.join(',')+')&select=*').then(function(rows){
+    cb(Array.isArray(rows)?rows:[]);
+  }).catch(function(){ cb([]); });
+}
+
+// Shared net-balance calculation used by member view and organizer dashboard
+// so both agree. Positive = owed money, negative = owes money.
+function computeTripBalances(members, expenses, splits){
+  var balance = {};
+  members.forEach(function(m){ balance[m.id]=0; });
+  if(!members.length) return balance;
+  expenses.forEach(function(exp){
+    if(exp.paid_by_member_id && balance[exp.paid_by_member_id]!==undefined){
+      balance[exp.paid_by_member_id] += Number(exp.amount_php);
+    }
+    var es = exp.split_mode==='custom'
+      ? splits.filter(function(s){ return s.expense_id===exp.id; })
+      : [];
+    if(es.length){
+      es.forEach(function(s){
+        if(balance[s.member_id]!==undefined) balance[s.member_id] -= Number(s.share_amount);
+      });
+    } else {
+      // Equal split, or a custom expense whose split rows are missing — fall
+      // back to splitting equally so the amount is never dropped.
+      var share = Number(exp.amount_php)/members.length;
+      members.forEach(function(m){ balance[m.id]-=share; });
+    }
+  });
+  return balance;
 }
 
 function fmtForeign(amt, sym){ return sym + Number(amt).toLocaleString('en-PH',{minimumFractionDigits:2,maximumFractionDigits:2}); }
@@ -3699,26 +3738,8 @@ function renderTSettlement(members, expenses, splits){
     return;
   }
 
-  // Calculate balance per member: paid - owed
-  var balance = {}; // memberId -> net (positive = owed to them, negative = they owe)
-  members.forEach(function(m){ balance[m.id]=0; });
-
-  expenses.forEach(function(exp){
-    // Credit the payer
-    if(exp.paid_by_member_id && balance[exp.paid_by_member_id]!==undefined){
-      balance[exp.paid_by_member_id] += Number(exp.amount_php);
-    }
-    // Debit each member's share
-    if(exp.split_mode==='equal'){
-      var share = Number(exp.amount_php) / members.length;
-      members.forEach(function(m){ balance[m.id] -= share; });
-    } else {
-      // Custom split — use splits table
-      splits.filter(function(s){return s.expense_id===exp.id;}).forEach(function(s){
-        if(balance[s.member_id]!==undefined) balance[s.member_id] -= Number(s.share_amount);
-      });
-    }
-  });
+  // Calculate balance per member: paid - owed (positive = owed to them)
+  var balance = computeTripBalances(members, expenses, splits);
 
   var sym = tCurrentTrip.currency_symbol||'';
   var html = members.map(function(m){
@@ -3742,21 +3763,7 @@ function renderTSettlement(members, expenses, splits){
 
 function renderTMyBalance(members, expenses, splits){
   if(!tCurrentMember) return;
-  var balance = {};
-  members.forEach(function(m){ balance[m.id]=0; });
-  expenses.forEach(function(exp){
-    if(exp.paid_by_member_id && balance[exp.paid_by_member_id]!==undefined){
-      balance[exp.paid_by_member_id] += Number(exp.amount_php);
-    }
-    if(exp.split_mode==='equal'){
-      var share = Number(exp.amount_php) / members.length;
-      members.forEach(function(m){ balance[m.id] -= share; });
-    } else {
-      splits.filter(function(s){return s.expense_id===exp.id;}).forEach(function(s){
-        if(balance[s.member_id]!==undefined) balance[s.member_id] -= Number(s.share_amount);
-      });
-    }
-  });
+  var balance = computeTripBalances(members, expenses, splits);
   var myBal = balance[tCurrentMember.id]||0;
   el('tMyBalance').style.display='block';
   el('tMyShareAmt').textContent = (myBal>=0?'Gets back ':' Owes ') + fmt(Math.abs(myBal));
@@ -3848,7 +3855,7 @@ function submitTExpense(){
           return cb && cb.checked;
         });
         if(!selected.length){ loadTripExpenses(); return; }
-        var shareAmt = amtPHP / selected.length;
+        var shareAmt = (amtPHP||amtF) / selected.length;
         Promise.all(selected.map(function(m){
           return supaPost('trip_expense_splits', { expense_id: expId, member_id: m.id, share_amount: shareAmt });
         })).then(function(){ loadTripExpenses(); });
@@ -3897,8 +3904,15 @@ function renderTDash(){
     supaGet('trip_members?trip_id=eq.'+tCurrentTrip.id+'&order=joined_at.asc&select=*'),
     supaGet('trip_expenses?trip_id=eq.'+tCurrentTrip.id+'&order=expense_date.asc,created_at.asc&select=*')
   ]).then(function(results){
-    var members  = results[0]||[];
-    var expenses = results[1]||[];
+    var members  = Array.isArray(results[0])?results[0]:[];
+    var expenses = Array.isArray(results[1])?results[1]:[];
+    fetchTripSplits(expenses, function(splits){
+      renderTDashData(members, expenses, splits);
+    });
+  });
+}
+
+function renderTDashData(members, expenses, splits){
     var totalPHP = expenses.reduce(function(s,e){return s+Number(e.amount_php);},0);
 
     el('tDashTotal').textContent = fmt(totalPHP);
@@ -3906,16 +3920,8 @@ function renderTDash(){
     el('tDashExpCount').textContent = expenses.length;
     el('tDashCurrency').textContent = tCurrentTrip.currency+' '+tCurrentTrip.currency_symbol;
 
-    // Balances
-    var balance = {};
-    members.forEach(function(m){ balance[m.id]=0; });
-    expenses.forEach(function(exp){
-      if(exp.paid_by_member_id && balance[exp.paid_by_member_id]!==undefined){
-        balance[exp.paid_by_member_id] += Number(exp.amount_php);
-      }
-      var share = Number(exp.amount_php)/members.length;
-      members.forEach(function(m){ balance[m.id]-=share; });
-    });
+    // Balances (respects custom splits so it matches the member view)
+    var balance = computeTripBalances(members, expenses, splits);
 
     // Who Paid Upfront — show total each member paid
     var paidUpfront = {};
@@ -3975,7 +3981,6 @@ function renderTDash(){
       var link = e.target.closest('.tBankLink');
       if(link) viewBankDetails(link.getAttribute('data-mid'));
     };
-  });
 }
 
 function closeTripConfirm(){
