@@ -2725,9 +2725,13 @@ document.addEventListener('DOMContentLoaded', function(){
   <div id="tExpenseSection" style="display:none">
     <!-- Balance summary -->
     <div id="tMyBalance" class="card card-green" style="display:none;margin-top:16px">
-      <div style="font-size:11px;color:var(--mid);margin-bottom:4px">YOUR SHARE</div>
-      <div style="font-size:28px;font-weight:900;color:var(--accent);letter-spacing:-1px" id="tMyShareAmt">—</div>
-      <div style="font-size:12px;color:var(--mid);margin-top:4px" id="tMyShareDetail">—</div>
+      <div style="font-size:11px;color:var(--mid);margin-bottom:4px;letter-spacing:0.5px">YOU'VE SHELLED OUT</div>
+      <div style="font-size:28px;font-weight:900;color:var(--accent);letter-spacing:-1px" id="tMyPaidAmt">—</div>
+      <div style="font-size:12px;color:var(--mid);margin-top:2px">Total you've paid upfront for the crew</div>
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-top:14px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:12px;color:var(--mid)" id="tMyShareDetail">Your net balance</div>
+        <div style="font-size:16px;font-weight:800" id="tMyShareAmt">—</div>
+      </div>
     </div>
 
     <!-- Add expense button -->
@@ -2800,7 +2804,7 @@ document.addEventListener('DOMContentLoaded', function(){
       </div>
     </div>
     <div class="field">
-      <label class="flabel">Date</label>
+      <label class="flabel">Date Occurred</label>
       <input type="date" id="tExpDate" style="width:100%;background:var(--muted);border:1px solid var(--border);border-radius:10px;color:var(--text);padding:12px 14px;font-size:16px;font-family:inherit;outline:none;min-height:48px"/>
     </div>
     <div class="field">
@@ -3861,10 +3865,16 @@ function renderTMyBalance(members, expenses, splits){
   if(!tCurrentMember) return;
   var balance = computeTripBalances(members, expenses, splits);
   var myBal = balance[tCurrentMember.id]||0;
+  // Total this member has personally paid upfront (money actually shelled out).
+  var myPaid = 0;
+  expenses.forEach(function(exp){
+    if(exp.paid_by_member_id === tCurrentMember.id) myPaid += Number(exp.amount_php);
+  });
   el('tMyBalance').style.display='block';
-  el('tMyShareAmt').textContent = (myBal>=0?'Gets back ':' Owes ') + fmt(Math.abs(myBal));
+  el('tMyPaidAmt').textContent = fmt(myPaid);
+  el('tMyShareAmt').textContent = (myBal>=0?'Gets back ':'Owes ') + fmt(Math.abs(myBal));
   el('tMyShareAmt').style.color = myBal>=0?'var(--accent)':'var(--red)';
-  el('tMyShareDetail').textContent = 'Your net balance across all expenses';
+  el('tMyShareDetail').textContent = 'Your net balance';
 }
 
 // ── Add expense ────────────────────────────────────────────────────────
