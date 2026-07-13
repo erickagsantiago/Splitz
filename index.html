@@ -2709,9 +2709,8 @@ document.addEventListener('DOMContentLoaded', function(){
 
 <!-- T3: Trip Member / Shared Contributor View -->
 <div id="tMember" class="screen">
-  <div style="display:flex;justify-content:space-between;align-items:center;padding-top:24px;padding-bottom:2px">
+  <div style="padding-top:24px;padding-bottom:2px">
     <div style="font-size:13px;color:var(--blue);font-weight:700">✈️ Shared Trip</div>
-    <span id="tMemberCloseLink" onclick="closeTripFromMember()" style="display:none;font-size:11px;color:var(--mid);background:none;border:none;cursor:pointer;font-family:inherit;text-decoration:underline">Close Trip</span>
   </div>
   <div class="ptitle" style="padding-top:2px" id="tMemberTitle">Loading trip…</div>
   <div class="psub" id="tMemberSub">Please wait</div>
@@ -2780,6 +2779,20 @@ document.addEventListener('DOMContentLoaded', function(){
       <button class="btn btn-green-outline" style="padding:10px;font-size:13px" onclick="saveBankDetails()">💾 Save Bank Details</button>
     </div>
     <button class="btn btn-ghost" style="margin-top:8px;font-size:13px" onclick="toggleBankDetails()">🏦 <span id="tBankToggleLabel">Add My Bank Details</span></button>
+
+    <!-- Close / settle trip -->
+    <button id="tMemberCloseBtn" onclick="closeTripFromMember()" style="display:none;width:100%;margin-top:20px;padding:15px;border-radius:14px;border:1.5px solid var(--blue);background:rgba(26,111,232,0.06);color:var(--blue);font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">✓ Everyone's Settled — Close Trip</button>
+    <div id="tMemberCloseHint" style="display:none;font-size:11px;color:var(--dim);text-align:center;margin-top:6px">Locks new expenses for everyone once the crew has paid up.</div>
+  </div>
+</div>
+
+<!-- Trip Completion Modal -->
+<div id="tDoneModal" style="position:fixed;inset:0;z-index:1200;display:none;align-items:center;justify-content:center;padding:24px;background:rgba(10,25,50,0.6);backdrop-filter:blur(6px);-webkit-backdrop-filter:blur(6px)">
+  <div style="background:#fff;border-radius:24px;padding:32px 24px;width:100%;max-width:360px;text-align:center;box-shadow:0 12px 48px rgba(0,0,0,0.3);animation:slideUp 0.35s cubic-bezier(.4,0,.2,1)">
+    <div style="font-size:56px;line-height:1;margin-bottom:12px">🎉</div>
+    <div style="font-size:22px;font-weight:900;color:#0F1F3D;letter-spacing:-0.5px;margin-bottom:8px">All Done!</div>
+    <div style="font-size:14px;color:#5A6A85;line-height:1.6;margin-bottom:24px">This trip is settled and closed. Everyone's balances are final — no more expenses can be added.<br/><br/>Safe travels! ✈️</div>
+    <button onclick="closeTDoneModal()" style="width:100%;padding:14px;border-radius:14px;border:none;background:linear-gradient(135deg,#1A6FE8,#0055A4);color:#fff;font-size:15px;font-weight:800;cursor:pointer;font-family:inherit">Done</button>
   </div>
 </div>
 
@@ -3733,10 +3746,16 @@ function showTMemberExpenses(){
   el('tExpenseSection').style.display='block';
   el('tMemberNameHint').style.display='block';
   // Closed trips are read-only for everyone.
-  var isClosed = tCurrentTrip && tCurrentTrip.status==='closed';
-  var addBtn = el('tAddExpenseBtn'); if(addBtn) addBtn.style.display = isClosed ? 'none' : '';
-  var closeLink = el('tMemberCloseLink'); if(closeLink) closeLink.style.display = isClosed ? 'none' : 'inline';
+  setTripClosedUI(tCurrentTrip && tCurrentTrip.status==='closed');
   loadTripExpenses();
+}
+
+// Toggle the add / close-trip affordances based on whether the trip is closed.
+function setTripClosedUI(isClosed){
+  var addBtn   = el('tAddExpenseBtn'); if(addBtn)   addBtn.style.display   = isClosed ? 'none' : '';
+  var closeBtn = el('tMemberCloseBtn'); if(closeBtn) closeBtn.style.display = isClosed ? 'none' : 'block';
+  var closeHint= el('tMemberCloseHint'); if(closeHint) closeHint.style.display = isClosed ? 'none' : 'block';
+  var banner   = el('tMemberClosedBanner'); if(banner) banner.style.display = isClosed ? 'block' : 'none';
 }
 
 // Any contributor can copy the trip link to invite others.
@@ -3751,12 +3770,14 @@ function closeTripFromMember(){
   showDeleteConfirm('Close this trip? It locks new expenses for everyone and marks the trip as settled.', function(){
     supaPatch('trips?id=eq.'+tCurrentTrip.id, { status:'closed' }).then(function(){
       tCurrentTrip.status='closed';
-      showToast('✓ Trip closed!','success');
-      el('tMemberClosedBanner').style.display='block';
-      var addBtn = el('tAddExpenseBtn'); if(addBtn) addBtn.style.display='none';
-      var closeLink = el('tMemberCloseLink'); if(closeLink) closeLink.style.display='none';
+      setTripClosedUI(true);
+      el('tDoneModal').style.display='flex';
     });
   });
+}
+
+function closeTDoneModal(){
+  el('tDoneModal').style.display='none';
 }
 
 // ── Load & render expenses ─────────────────────────────────────────────
