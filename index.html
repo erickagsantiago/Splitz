@@ -2747,10 +2747,12 @@ function copyDashLink(){
 
 function openGcashApp(){
   // Try the deep link first; if GCash isn't installed the browser ignores it.
-  // Fall back to the GCash web app after a short delay so installed-app users
-  // aren't redirected away unnecessarily.
+  // Fall back to the GCash site after a short delay so installed-app users
+  // aren't redirected away unnecessarily. Use a same-tab navigation (not
+  // window.open) because the fallback fires from a timer — outside the user
+  // gesture — and mobile browsers block popups opened without a gesture.
   var fallback = setTimeout(function(){
-    window.open('https://gcash.com', '_blank');
+    window.location.href = 'https://www.gcash.com';
   }, 1500);
   window.location.href = 'gcash://';
   // If the deep link succeeded the page loses focus and the timer is irrelevant,
