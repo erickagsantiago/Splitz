@@ -242,10 +242,13 @@ body[data-mode="travel"] .sess-tab.active {
   background: rgba(26,111,232,0.08) !important;
   color: #1A6FE8 !important;
 }
-body[data-mode="travel"] :root {
-  --accent: #1A6FE8 !important;
-  --accent2: #0055A4 !important;
-  --abg: rgba(26,111,232,0.08) !important;
+/* Set the accent custom properties on <body> itself so they cascade to every
+   descendant. (A `body :root` selector never matches — :root is <html>, not a
+   child of body — which is why accent-coloured text stayed green before.) */
+body[data-mode="travel"] {
+  --accent: #1A6FE8;
+  --accent2: #0055A4;
+  --abg: rgba(26,111,232,0.08);
 }
 </style>
 </head>
@@ -295,27 +298,6 @@ body[data-mode="travel"] :root {
     </div>
 
     <div style="margin-top:24px;font-size:11px;color:rgba(255,255,255,0.45)">Beta · Free to use</div>
-  </div>
-</div>
-
-    <div style="font-size:22px;font-weight:900;color:#fff;letter-spacing:-0.5px;margin-bottom:8px">Biller Access</div>
-    <div style="font-size:14px;color:rgba(255,255,255,0.75);margin-bottom:28px;line-height:1.6">This area is for billers only.<br/>Enter your invite code to continue.</div>
-
-    <!-- Code input -->
-    <input type="text" id="inviteInput" class="invite-input" placeholder="Enter invite code" maxlength="20"
-      oninput="this.value=this.value.toUpperCase()"
-      onkeydown="if(event.key==='Enter') checkInviteCode()"/>
-
-    <div id="inviteError" style="display:none;font-size:12px;color:#FFD6D6;margin-top:8px;font-weight:600">
-      ❌ Invalid code — please try again
-    </div>
-
-    <button onclick="checkInviteCode()" style="width:100%;margin-top:16px;padding:15px;border-radius:12px;border:none;background:#fff;color:#00B37A;font-size:16px;font-weight:800;cursor:pointer;font-family:inherit;box-shadow:0 4px 20px rgba(0,0,0,0.15)">
-      Enter →
-    </button>
-
-
-
   </div>
 </div>
 
