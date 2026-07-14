@@ -1008,7 +1008,7 @@ function loadBillsFromSupabase(cb){
   supaRpc('get_bills_by_ids', { p_ids: savedIds }).then(function(bills){
     if(!bills || !bills.length){ if(cb) cb(); return; }
     var promises = bills.map(function(bill){
-      return supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
+      return supaRpc('get_payments_for_bill', { p_bill_id: bill.id }).then(function(pmts){
         return { bill: bill, payments: pmts||[] };
       });
     });
@@ -1016,7 +1016,7 @@ function loadBillsFromSupabase(cb){
       sessions = results.map(function(r){
         var b = r.bill;
         var parsedItems = [];
-        try{ parsedItems = typeof b.items === 'string' ? JSON.parse(b.items) : (b.items||[]); }catch(e){ logErr('parse bill items '+b.id, e); }
+        try{ parsedItems = sanitizeItems(typeof b.items === 'string' ? JSON.parse(b.items) : (b.items||[])); }catch(e){ logErr('parse bill items '+b.id, e); }
         return {
           id:        b.id, supaId: b.id,
           label:     b.label||'Bill #1',
@@ -1051,9 +1051,9 @@ function loadBillBySlug(slug, cb){
   supaRpc('get_bill_by_slug', { p_slug: slug }).then(function(bills){
     if(!bills || !bills.length){ if(cb) cb(null); return; }
     var bill = bills[0];
-    supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
+    supaRpc('get_payments_for_bill', { p_bill_id: bill.id }).then(function(pmts){
       var parsedItems = [];
-      try{ parsedItems = typeof bill.items === 'string' ? JSON.parse(bill.items) : (bill.items||[]); }catch(e){ logErr('parse bill items '+bill.id, e); }
+      try{ parsedItems = sanitizeItems(typeof bill.items === 'string' ? JSON.parse(bill.items) : (bill.items||[])); }catch(e){ logErr('parse bill items '+bill.id, e); }
       items = parsedItems;
       svcFromReceipt = bill.svc;
       numPeople = bill.num_people;
@@ -1107,7 +1107,7 @@ function confirmPayInSupabase(paymentId, cb){
 
 // ─── Delete bill ──────────────────────────────────────────────────────────────
 function deleteBillFromSupabase(billId, cb){
-  supaDelete('bills?id=eq.'+billId).then(function(){ if(cb) cb(); });
+  supaRpc('delete_bill', { p_id: billId }).then(function(){ if(cb) cb(); });
 }
 
 // ─── Realtime subscription ────────────────────────────────────────────────────
@@ -1145,7 +1145,7 @@ function subscribeToPayments(billId){
 // Pull latest payments from server and re-render dashboard
 function refreshDashFromServer(cb){
   if(!currentBillId) return;
-  supaGet('payments?bill_id=eq.'+currentBillId+'&order=created_at.asc&select=*').then(function(pmts){
+  supaRpc('get_payments_for_bill', { p_bill_id: currentBillId }).then(function(pmts){
     if(!pmts || !curSess()) return;
     // Merge new payments into session — don't remove existing ones (preserves local state)
     var existing = curSess().payments;
@@ -1177,7 +1177,7 @@ setInterval(function(){
 setInterval(function(){
   var s4 = el('s4');
   if(s4 && s4.classList.contains('active') && currentBillId && splitMode!=='equal'){
-    supaGet('payments?bill_id=eq.'+currentBillId+'&select=*').then(function(pmts){
+    supaRpc('get_payments_for_bill', { p_bill_id: currentBillId }).then(function(pmts){
       if(!pmts || !curSess()) return;
       (pmts||[]).forEach(function(p){
         var exists = curSess().payments.some(function(x){return x.id===p.id;});
@@ -2401,7 +2401,7 @@ function confirmSent(){
 
   // For item splits: re-fetch latest payments first to catch concurrency conflicts
   if(!isEq && currentBillId){
-    supaGet('payments?bill_id=eq.'+currentBillId+'&select=*').then(function(latestPmts){
+    supaRpc('get_payments_for_bill', { p_bill_id: currentBillId }).then(function(latestPmts){
       // Build set of already-claimed item IDs from ALL existing payments
       // (pending OR confirmed). An item picked by anyone else — even before the
       // biller confirms — is taken, so two splitters can't grab the same item.
