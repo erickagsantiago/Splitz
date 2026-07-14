@@ -916,19 +916,20 @@ function supaWrite(method, path, body){
 
 // ─── Biller profile ───────────────────────────────────────────────────────────
 function saveBillerToSupabase(cb){
-  var body = { account_number: gcashNum, account_name: gcashName, payment_method: paymentMethod, qr_url: qrDataUrl };
-  if(currentBillerId && isUuid(currentBillerId)){
-    supaWrite('PATCH', 'billers?id=eq.'+currentBillerId, body).then(function(ok){ if(cb) cb(ok); });
-  } else {
-    // Generate the id client-side so we don't need the server to echo the row back.
-    currentBillerId = uuid();
-    body.id = currentBillerId;
-    supaWrite('POST', 'billers', body).then(function(ok){
-      if(ok){ try{ localStorage.setItem('splitz_biller_id', currentBillerId); }catch(e){} }
-      else { currentBillerId = null; } // don't keep an id whose row never saved
-      if(cb) cb(ok);
-    });
-  }
+  // The billers table denies direct SELECT (privacy), so a PATCH-by-id can't
+  // resolve its filter. Create-or-update the biller's own row via a SECURITY
+  // DEFINER upsert instead. Client generates the id so no server echo is needed.
+  if(!currentBillerId || !isUuid(currentBillerId)) currentBillerId = uuid();
+  var savedId = currentBillerId;
+  supaRpc('upsert_biller', {
+    p_id: savedId, p_account_number: gcashNum, p_account_name: gcashName,
+    p_payment_method: paymentMethod, p_qr_url: qrDataUrl
+  }).then(function(res){
+    var ok = isUuid(res) || (Array.isArray(res) && res.length > 0);
+    if(ok){ try{ localStorage.setItem('splitz_biller_id', savedId); }catch(e){} }
+    else { currentBillerId = null; } // don't keep an id whose row never saved
+    if(cb) cb(ok);
+  });
 }
 
 function loadBillerFromSupabase(cb){
@@ -952,12 +953,12 @@ function saveBillToSupabase(cb){
   // If the biller row can't be saved, don't proceed — a bill referencing a
   // missing biller_id would fail its foreign key and produce a dead link.
   if(!currentBillerId || !isUuid(currentBillerId)){ saveBillerToSupabase(function(ok){ if(!ok){ if(cb) cb(null); return; } saveBillToSupabase(cb); }); return; }
-  // Always update biller details before saving bill so latest gcash info is stored
+  // Refresh the biller's stored gcash details before saving the bill (fire and
+  // forget — the bill itself also bakes in gcash at insert time).
   if(gcashNum || gcashName){
-    supaWrite('PATCH', 'billers?id=eq.'+currentBillerId, {
-      account_number: gcashNum,
-      account_name: gcashName,
-      payment_method: 'GCash'
+    supaRpc('upsert_biller', {
+      p_id: currentBillerId, p_account_number: gcashNum, p_account_name: gcashName,
+      p_payment_method: 'GCash', p_qr_url: qrDataUrl
     });
   }
   var slug = genSlug();
@@ -1005,12 +1006,13 @@ function updateBillInSupabase(){
   // Note: gcash_number/gcash_name are intentionally NOT updated here — they are
   // immutable after the bill is created (enforced by a DB trigger) so payments
   // can never be redirected once the link has been shared.
-  supaPatch('bills?id=eq.'+currentBillId, {
-    label:      curSess() ? curSess().label : undefined,
-    split_mode: splitMode,
-    num_people: numPeople,
-    svc:        svcFromReceipt,
-    items:      JSON.stringify(sanitizeItems(items))
+  supaRpc('update_bill', {
+    p_id:         currentBillId,
+    p_label:      curSess() ? curSess().label : null,
+    p_split_mode: splitMode,
+    p_num_people: numPeople,
+    p_svc:        svcFromReceipt,
+    p_items:      JSON.stringify(sanitizeItems(items))
   });
 }
 
@@ -1116,7 +1118,7 @@ function savePaymentToSupabase(payment, cb){
 
 // ─── Confirm payment (biller) ─────────────────────────────────────────────────
 function confirmPayInSupabase(paymentId, cb){
-  supaPatch('payments?id=eq.'+paymentId, { confirmed: true }).then(function(){ if(cb) cb(); });
+  supaRpc('confirm_payment', { p_id: paymentId }).then(function(){ if(cb) cb(); });
 }
 
 // ─── Delete bill ──────────────────────────────────────────────────────────────
@@ -1672,7 +1674,7 @@ function saveBillLabel(val){
   persistSessions();
   // Sync to Supabase
   if(sessions[activeSession].supaId){
-    supaPatch('bills?id=eq.'+sessions[activeSession].supaId, { label: sessions[activeSession].label });
+    supaRpc('rename_bill', { p_id: sessions[activeSession].supaId, p_label: sessions[activeSession].label });
   }
   renderDash();
 }
