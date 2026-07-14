@@ -1165,15 +1165,16 @@ function refreshDashFromServer(cb){
   });
 }
 
-// Auto-refresh dashboard every 30 seconds as safety net
+// Auto-refresh dashboard every 10s (primary path now that realtime SELECT on
+// payments is locked down for privacy — polling drives the live "who paid" view)
 setInterval(function(){
   var s6 = el('s6');
   if(s6 && s6.classList.contains('active') && currentBillId){
     refreshDashFromServer(null);
   }
-}, 30000);
+}, 10000);
 
-// Also refresh splitter item list every 20s to show latest claimed items
+// Also refresh splitter item list every 10s to show latest claimed items
 setInterval(function(){
   var s4 = el('s4');
   if(s4 && s4.classList.contains('active') && currentBillId && splitMode!=='equal'){
@@ -1189,7 +1190,7 @@ setInterval(function(){
       renderGuestItems();
     });
   }
-}, 20000);
+}, 10000);
 
 function showNewPaymentNotification(name){
   showToast('💸 ' + name + ' just sent a payment!', 'success');
