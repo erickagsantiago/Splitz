@@ -888,19 +888,37 @@ function supaDelete(path){
   }).then(function(r){ return r.ok; })
     .catch(function(e){ logErr('Supabase DELETE ' + path, e); return false; });
 }
+// Write (POST/PATCH) that resolves to a real success boolean and, crucially,
+// TIMES OUT. A hung request (flaky mobile data, captive wi-fi) would otherwise
+// leave link generation stuck on "Generating link…" forever, since a plain
+// fetch never rejects on its own. Resolves false on HTTP error, network error,
+// or timeout so the caller can surface a retry instead of a dead/absent link.
+function supaWrite(method, path, body){
+  var ctrl = (typeof AbortController !== 'undefined') ? new AbortController() : null;
+  var timedOut = false;
+  var to = setTimeout(function(){ timedOut = true; if(ctrl) ctrl.abort(); }, 12000);
+  return fetch(SUPA_URL + '/rest/v1/' + path, {
+    method: method,
+    headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=minimal' }),
+    body: body ? JSON.stringify(body) : undefined,
+    signal: ctrl ? ctrl.signal : undefined
+  }).then(function(r){ clearTimeout(to); return r.ok; })
+    .catch(function(e){ clearTimeout(to); logErr('Supabase ' + method + ' ' + path + (timedOut ? ' (timeout)' : ''), e); return false; });
+}
 
 // ─── Biller profile ───────────────────────────────────────────────────────────
 function saveBillerToSupabase(cb){
   var body = { account_number: gcashNum, account_name: gcashName, payment_method: paymentMethod, qr_url: qrDataUrl };
   if(currentBillerId){
-    supaPatch('billers?id=eq.'+currentBillerId, body).then(function(){ if(cb) cb(); });
+    supaWrite('PATCH', 'billers?id=eq.'+currentBillerId, body).then(function(ok){ if(cb) cb(ok); });
   } else {
     // Generate the id client-side so we don't need the server to echo the row back.
     currentBillerId = uuid();
     body.id = currentBillerId;
-    supaPost('billers', body).then(function(){
-      try{ localStorage.setItem('splitz_biller_id', currentBillerId); }catch(e){}
-      if(cb) cb();
+    supaWrite('POST', 'billers', body).then(function(ok){
+      if(ok){ try{ localStorage.setItem('splitz_biller_id', currentBillerId); }catch(e){} }
+      else { currentBillerId = null; } // don't keep an id whose row never saved
+      if(cb) cb(ok);
     });
   }
 }
@@ -918,10 +936,12 @@ function loadBillerFromSupabase(cb){
 
 // ─── Bill (session) ───────────────────────────────────────────────────────────
 function saveBillToSupabase(cb){
-  if(!currentBillerId){ saveBillerToSupabase(function(){ saveBillToSupabase(cb); }); return; }
+  // If the biller row can't be saved, don't proceed — a bill referencing a
+  // missing biller_id would fail its foreign key and produce a dead link.
+  if(!currentBillerId){ saveBillerToSupabase(function(ok){ if(!ok){ if(cb) cb(null); return; } saveBillToSupabase(cb); }); return; }
   // Always update biller details before saving bill so latest gcash info is stored
   if(gcashNum || gcashName){
-    supaPatch('billers?id=eq.'+currentBillerId, {
+    supaWrite('PATCH', 'billers?id=eq.'+currentBillerId, {
       account_number: gcashNum,
       account_name: gcashName,
       payment_method: 'GCash'
@@ -943,7 +963,8 @@ function saveBillToSupabase(cb){
     gcash_number: gcashNum,
     gcash_name:   gcashName
   };
-  supaPost('bills', body).then(function(){
+  supaWrite('POST', 'bills', body).then(function(ok){
+    if(!ok){ if(cb) cb(null); return; }   // surface failure instead of a dead/absent link
     currentBillId = newId;
     // Add to local sessions array too
     sessions.push({
@@ -1482,7 +1503,8 @@ function saveGcash(){
   var a = (el('gcashName').value||'').trim();
   if(!n && !a){ showToast('Please fill in your GCash number or name'); return; }
   gcashNum=n; gcashName=a;
-  saveBillerToSupabase(function(){
+  saveBillerToSupabase(function(ok){
+    if(!ok){ showToast('Could not save — please check your connection and try again'); return; }
     showToast('✓ GCash details saved!', 'success');
     showGcashChip(n, a, 'GCash');
   });
@@ -2068,7 +2090,16 @@ function generateAndShow(){
 
   // Save to Supabase
   saveBillToSupabase(function(slug){
-    if(!slug){ showToast('Could not save — check your connection'); return; }
+    if(!slug){
+      // Reset the UI so the biller can retry instead of being stuck forever on
+      // the "Generating link…" placeholder.
+      el('lnkUrl').textContent = '';
+      lnkSection.style.display = 'none';
+      if(gbw) gbw.style.display = '';
+      if(hwWarn) hwWarn.style.display = '';
+      showToast('Could not generate link — please check your connection and try again');
+      return;
+    }
 
     var fullUrl = billUrl(slug);
 
