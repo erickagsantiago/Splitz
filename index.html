@@ -852,6 +852,14 @@ function uuid(){
   });
 }
 
+// Guards against corrupted localStorage (e.g. the literal string "null" written
+// by an earlier/other app on this origin) reaching the DB as a bogus uuid, which
+// Postgres rejects with "invalid input syntax for type uuid" and breaks writes.
+function isUuid(s){
+  return typeof s === 'string' &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s);
+}
+
 function supa(path, method, body){
   return fetchRetry(SUPA_URL + '/rest/v1/' + path, {
     method: method || 'GET',
@@ -909,7 +917,7 @@ function supaWrite(method, path, body){
 // ─── Biller profile ───────────────────────────────────────────────────────────
 function saveBillerToSupabase(cb){
   var body = { account_number: gcashNum, account_name: gcashName, payment_method: paymentMethod, qr_url: qrDataUrl };
-  if(currentBillerId){
+  if(currentBillerId && isUuid(currentBillerId)){
     supaWrite('PATCH', 'billers?id=eq.'+currentBillerId, body).then(function(ok){ if(cb) cb(ok); });
   } else {
     // Generate the id client-side so we don't need the server to echo the row back.
@@ -926,7 +934,12 @@ function saveBillerToSupabase(cb){
 function loadBillerFromSupabase(cb){
   var saved = null;
   try{ saved = localStorage.getItem('splitz_biller_id'); }catch(e){}
-  if(!saved){ if(cb) cb(); return; }
+  if(!saved || !isUuid(saved)){
+    // Corrupted/legacy value (e.g. the string "null") — discard and start fresh
+    // so we never send an invalid biller_id to the database.
+    try{ localStorage.removeItem('splitz_biller_id'); }catch(e){}
+    if(cb) cb(); return;
+  }
   // We keep currentBillerId so existing bills/links still work, but we do NOT
   // pre-fill the form or memory (biller enters fresh details each session). No
   // server read needed — direct SELECT on billers is locked down for privacy.
@@ -938,7 +951,7 @@ function loadBillerFromSupabase(cb){
 function saveBillToSupabase(cb){
   // If the biller row can't be saved, don't proceed — a bill referencing a
   // missing biller_id would fail its foreign key and produce a dead link.
-  if(!currentBillerId){ saveBillerToSupabase(function(ok){ if(!ok){ if(cb) cb(null); return; } saveBillToSupabase(cb); }); return; }
+  if(!currentBillerId || !isUuid(currentBillerId)){ saveBillerToSupabase(function(ok){ if(!ok){ if(cb) cb(null); return; } saveBillToSupabase(cb); }); return; }
   // Always update biller details before saving bill so latest gcash info is stored
   if(gcashNum || gcashName){
     supaWrite('PATCH', 'billers?id=eq.'+currentBillerId, {
@@ -1004,6 +1017,7 @@ function updateBillInSupabase(){
 function loadBillsFromSupabase(cb){
   var savedIds = null;
   try{ savedIds = JSON.parse(localStorage.getItem('splitz_bill_ids')||'null'); }catch(e){}
+  if(Array.isArray(savedIds)) savedIds = savedIds.filter(isUuid); // drop any corrupted ids
   if(!savedIds || !savedIds.length){ if(cb) cb(); return; }
   supaRpc('get_bills_by_ids', { p_ids: savedIds }).then(function(bills){
     if(!bills || !bills.length){ if(cb) cb(); return; }
