@@ -887,99 +887,127 @@ function supaDelete(path){
     headers: supaHeaders
   }).then(function(r){ return r.ok; });
 }
+// Call a Postgres RPC (used for the privacy-locked dining tables, which deny
+// direct SELECT/UPDATE/DELETE to anon). Returns parsed JSON or null on error.
+function supaRpc(fn, args){
+  return fetch(SUPA_URL + '/rest/v1/rpc/' + fn, {
+    method: 'POST', headers: supaHeaders, body: JSON.stringify(args || {})
+  }).then(function(r){ return r.text(); })
+    .then(function(t){ return t ? JSON.parse(t) : null; })
+    .catch(function(){ return null; });
+}
+// Insert that resolves to a real success boolean (return=minimal → no SELECT needed).
+function supaInsert(table, body){
+  return fetch(SUPA_URL + '/rest/v1/' + table, {
+    method: 'POST', headers: Object.assign({}, supaHeaders, { 'Prefer': 'return=minimal' }),
+    body: JSON.stringify(body)
+  }).then(function(r){ return r.ok; }).catch(function(){ return false; });
+}
+function uuid(){
+  try{ if(window.crypto && crypto.randomUUID) return crypto.randomUUID(); }catch(e){}
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c){
+    var r = (Math.random()*16)|0, v = c==='x' ? r : (r&0x3|0x8); return v.toString(16);
+  });
+}
+function isUuid(s){ return typeof s==='string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s); }
+function genSlug(){ var c='abcdefghijklmnopqrstuvwxyz0123456789', s=''; for(var i=0;i<6;i++) s+=c.charAt((Math.random()*36)|0); return s; }
+function sanitizeAmount(n){ n=Number(n); if(!isFinite(n)||isNaN(n)||n<0) return 0; return Math.round(Math.min(n,10000000)*100)/100; }
+function sanitizeName(s){ return String(s==null?'':s).replace(/[<>]/g,'').trim().slice(0,80); }
+function sanitizeItems(arr){
+  if(!Array.isArray(arr)) return [];
+  return arr.slice(0,200).map(function(it){
+    return { id:Number(it&&it.id)||0, name:(sanitizeName(it&&it.name)||'Item').slice(0,80), price:sanitizeAmount(it&&it.price) };
+  });
+}
 
 // ─── Biller profile ───────────────────────────────────────────────────────────
 function saveBillerToSupabase(cb){
-  var body = { account_number: gcashNum, account_name: gcashName, payment_method: paymentMethod, qr_url: qrDataUrl };
-  if(currentBillerId){
-    supaPatch('billers?id=eq.'+currentBillerId, body).then(function(){ if(cb) cb(); });
-  } else {
-    supaPost('billers', body).then(function(rows){
-      if(rows && rows[0]) currentBillerId = rows[0].id;
-      try{ localStorage.setItem('splitz_biller_id', currentBillerId); }catch(e){}
-      if(cb) cb();
-    });
-  }
+  // billers denies direct SELECT, so PATCH/insert-returning fail — upsert via RPC.
+  if(!currentBillerId || !isUuid(currentBillerId)) currentBillerId = uuid();
+  var savedId = currentBillerId;
+  supaRpc('upsert_biller', {
+    p_id: savedId, p_account_number: gcashNum, p_account_name: gcashName,
+    p_payment_method: paymentMethod, p_qr_url: qrDataUrl
+  }).then(function(res){
+    var ok = isUuid(res) || (Array.isArray(res) && res.length > 0);
+    if(ok){ try{ localStorage.setItem('splitz_biller_id', savedId); }catch(e){} }
+    else { currentBillerId = null; }
+    if(cb) cb(ok);
+  });
 }
 
 function loadBillerFromSupabase(cb){
   var saved = null;
   try{ saved = localStorage.getItem('splitz_biller_id'); }catch(e){}
-  if(!saved){ if(cb) cb(); return; }
+  if(!saved || !isUuid(saved)){
+    try{ localStorage.removeItem('splitz_biller_id'); }catch(e){}
+    if(cb) cb(); return;
+  }
+  // Keep currentBillerId so existing bills/links still work; don't pre-fill the
+  // form (biller enters fresh details each session). No server read needed.
   currentBillerId = saved;
-  supaGet('billers?id=eq.'+saved+'&select=*').then(function(rows){
-    // Note: we keep currentBillerId so existing bills/links still work,
-    // but we do NOT pre-fill the form or memory. The biller enters
-    // fresh payment details each session for privacy.
-    if(cb) cb();
-  });
+  if(cb) cb();
 }
 
 // ─── Bill (session) ───────────────────────────────────────────────────────────
 function saveBillToSupabase(cb){
-  if(!currentBillerId){ saveBillerToSupabase(function(){ saveBillToSupabase(cb); }); return; }
-  // Always update biller details before saving bill so latest gcash info is stored
+  if(!currentBillerId || !isUuid(currentBillerId)){ saveBillerToSupabase(function(ok){ if(!ok){ if(cb) cb(null); return; } saveBillToSupabase(cb); }); return; }
+  // Refresh stored gcash (fire and forget — the bill also bakes it in below).
   if(gcashNum || gcashName){
-    supaPatch('billers?id=eq.'+currentBillerId, {
-      account_number: gcashNum,
-      account_name: gcashName,
-      payment_method: 'GCash'
-    });
+    supaRpc('upsert_biller', { p_id: currentBillerId, p_account_number: gcashNum, p_account_name: gcashName, p_payment_method: 'GCash', p_qr_url: qrDataUrl });
   }
-  var slug = 'bill-'+Math.random().toString(36).slice(2,10);
+  var slug  = genSlug();
+  var newId = uuid();
   var body = {
+    id:         newId,
     biller_id:  currentBillerId,
     label: (el('billLabel') && el('billLabel').value.trim()) ? el('billLabel').value.trim() : 'Bill #'+(sessions.length+1),
     split_mode: splitMode,
     num_people: numPeople,
     svc:        svcFromReceipt,
-    items:      JSON.stringify(items),
-    slug:       slug
+    items:      JSON.stringify(sanitizeItems(items)),
+    slug:       slug,
+    gcash_number: gcashNum,
+    gcash_name:   gcashName
   };
-  supaPost('bills', body).then(function(rows){
-    if(rows && rows[0]){
-      currentBillId = rows[0].id;
-      // Add to local sessions array too
-      sessions.push({
-        id:        currentBillId,
-        supaId:    currentBillId,
-        label:     body.label,
-        date:      new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric'})+'  · '+new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),
-        items:     items.slice(),
-        svc:       svcFromReceipt,
-        numPeople: numPeople,
-        splitMode: splitMode,
-        payments:  [],
-        slug:      slug
-      });
-      activeSession = sessions.length-1;
-      try{ localStorage.setItem('splitz_bill_ids', JSON.stringify(sessions.map(function(s){return s.supaId;}))); }catch(e){}
-    }
-    if(cb) cb(rows && rows[0] ? rows[0].slug : null);
+  supaInsert('bills', body).then(function(ok){
+    if(!ok){ if(cb) cb(null); return; }
+    currentBillId = newId;
+    sessions.push({
+      id:        currentBillId, supaId: currentBillId, label: body.label,
+      date:      new Date().toLocaleDateString('en-PH',{month:'short',day:'numeric'})+'  · '+new Date().toLocaleTimeString('en-PH',{hour:'2-digit',minute:'2-digit'}),
+      items:     items.slice(), svc: svcFromReceipt, numPeople: numPeople,
+      splitMode: splitMode, payments: [], slug: slug,
+      gcashNumber: gcashNum, gcashName: gcashName
+    });
+    activeSession = sessions.length-1;
+    try{ localStorage.setItem('splitz_bill_ids', JSON.stringify(sessions.map(function(s){return s.supaId;}))); }catch(e){}
+    if(cb) cb(slug);
   });
 }
 
 function updateBillInSupabase(){
   if(!currentBillId) return;
-  supaPatch('bills?id=eq.'+currentBillId, {
-    label:        curSess() ? curSess().label : undefined,
-    split_mode:   splitMode,
-    num_people:   numPeople,
-    svc:          svcFromReceipt,
-    items:        JSON.stringify(items),
-    gcash_number: gcashNum,
-    gcash_name:   gcashName
+  // gcash is intentionally NOT updated (immutable once the bill is created).
+  supaRpc('update_bill', {
+    p_id:         currentBillId,
+    p_label:      curSess() ? curSess().label : null,
+    p_split_mode: splitMode,
+    p_num_people: numPeople,
+    p_svc:        svcFromReceipt,
+    p_items:      JSON.stringify(sanitizeItems(items))
   });
 }
 
 function loadBillsFromSupabase(cb){
   var savedIds = null;
   try{ savedIds = JSON.parse(localStorage.getItem('splitz_bill_ids')||'null'); }catch(e){}
+  if(Array.isArray(savedIds)) savedIds = savedIds.filter(isUuid);
   if(!savedIds || !savedIds.length){ if(cb) cb(); return; }
-  supaGet('bills?id=in.('+savedIds.join(',')+')'+'&order=created_at.asc&select=*').then(function(bills){
+  supaRpc('get_bills_by_ids', { p_ids: savedIds }).then(function(bills){
     if(!bills || !bills.length){ if(cb) cb(); return; }
     var promises = bills.map(function(bill){
-      return supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
+      return supaRpc('get_payments_for_bill', { p_bill_id: bill.id }).then(function(pmts){
         return { bill: bill, payments: pmts||[] };
       });
     });
@@ -987,7 +1015,7 @@ function loadBillsFromSupabase(cb){
       sessions = results.map(function(r){
         var b = r.bill;
         var parsedItems = [];
-        try{ parsedItems = typeof b.items === 'string' ? JSON.parse(b.items) : (b.items||[]); }catch(e){}
+        try{ parsedItems = sanitizeItems(typeof b.items === 'string' ? JSON.parse(b.items) : (b.items||[])); }catch(e){}
         return {
           id:        b.id, supaId: b.id,
           label:     b.label||'Bill #1',
@@ -1017,38 +1045,35 @@ function loadBillsFromSupabase(cb){
 
 // ─── Load bill by slug (splitter opening link) ────────────────────────────────
 function loadBillBySlug(slug, cb){
-  supaGet('bills?slug=eq.'+slug+'&select=*').then(function(bills){
+  // get_bill_by_slug already coalesces the biller's gcash into the bill row, so
+  // no separate billers read is needed (billers denies direct SELECT).
+  supaRpc('get_bill_by_slug', { p_slug: slug }).then(function(bills){
     if(!bills || !bills.length){ if(cb) cb(null); return; }
     var bill = bills[0];
-    supaGet('billers?id=eq.'+bill.biller_id+'&select=*').then(function(billers){
-      var biller = billers && billers[0] ? billers[0] : {};
-      supaGet('payments?bill_id=eq.'+bill.id+'&order=created_at.asc&select=*').then(function(pmts){
-        var parsedItems = [];
-        try{ parsedItems = typeof bill.items === 'string' ? JSON.parse(bill.items) : (bill.items||[]); }catch(e){}
-        items = parsedItems;
-        svcFromReceipt = bill.svc;
-        numPeople = bill.num_people;
-        splitMode = bill.split_mode;
-        // Use bill-level gcash if available, fall back to biller record
-        gcashNum = bill.gcash_number || biller.account_number || '';
-        gcashName = bill.gcash_name || biller.account_name || '';
-        paymentMethod = 'GCash';
-        qrDataUrl = '';
-        currentBillId = bill.id;
-        // Build local session
-        sessions = [{
-          id: bill.id, supaId: bill.id,
-          label: bill.label, date: bill.created_at,
-          items: parsedItems, svc: bill.svc,
-          numPeople: bill.num_people, splitMode: bill.split_mode,
-          slug: bill.slug,
-          payments: (pmts||[]).map(function(p){
-            return { id:p.id, name:p.splitter_name, items:p.item_ids||[], equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed };
-          })
-        }];
-        activeSession = 0;
-        if(cb) cb(bill);
-      });
+    supaRpc('get_payments_for_bill', { p_bill_id: bill.id }).then(function(pmts){
+      var parsedItems = [];
+      try{ parsedItems = sanitizeItems(typeof bill.items === 'string' ? JSON.parse(bill.items) : (bill.items||[])); }catch(e){}
+      items = parsedItems;
+      svcFromReceipt = bill.svc;
+      numPeople = bill.num_people;
+      splitMode = bill.split_mode;
+      gcashNum = bill.gcash_number || '';
+      gcashName = bill.gcash_name || '';
+      paymentMethod = 'GCash';
+      qrDataUrl = '';
+      currentBillId = bill.id;
+      sessions = [{
+        id: bill.id, supaId: bill.id,
+        label: bill.label, date: bill.created_at,
+        items: parsedItems, svc: bill.svc,
+        numPeople: bill.num_people, splitMode: bill.split_mode,
+        slug: bill.slug,
+        payments: (pmts||[]).map(function(p){
+          return { id:p.id, name:p.splitter_name, items:p.item_ids||[], equalSplit:p.equal_split, amount:p.amount, confirmed:p.confirmed };
+        })
+      }];
+      activeSession = 0;
+      if(cb) cb(bill);
     });
   });
 }
@@ -1056,29 +1081,31 @@ function loadBillBySlug(slug, cb){
 // ─── Payment (splitter confirms) ──────────────────────────────────────────────
 function savePaymentToSupabase(payment, cb){
   if(!currentBillId){ if(cb) cb(); return; }
-  supaPost('payments', {
+  var newId = uuid();
+  var safeName = sanitizeName(payment.name);
+  if(!safeName){ if(cb) cb(); return; }
+  supaInsert('payments', {
+    id:            newId,
     bill_id:       currentBillId,
-    splitter_name: payment.name,
-    item_ids:      payment.items||[],
+    splitter_name: safeName,
+    item_ids:      Array.isArray(payment.items) ? payment.items.map(Number).filter(function(n){return !isNaN(n);}) : [],
     equal_split:   payment.equalSplit||false,
-    amount:        payment.amount||0,
+    amount:        sanitizeAmount(payment.amount),
     confirmed:     false
-  }).then(function(rows){
-    if(rows && rows[0] && curSess()){
-      curSess().payments.push(Object.assign({}, payment, { id: rows[0].id }));
-    }
+  }).then(function(ok){
+    if(ok && curSess()) curSess().payments.push(Object.assign({}, payment, { id: newId }));
     if(cb) cb();
   });
 }
 
 // ─── Confirm payment (biller) ─────────────────────────────────────────────────
 function confirmPayInSupabase(paymentId, cb){
-  supaPatch('payments?id=eq.'+paymentId, { confirmed: true }).then(function(){ if(cb) cb(); });
+  supaRpc('confirm_payment', { p_id: paymentId }).then(function(){ if(cb) cb(); });
 }
 
 // ─── Delete bill ──────────────────────────────────────────────────────────────
 function deleteBillFromSupabase(billId, cb){
-  supaDelete('bills?id=eq.'+billId).then(function(){ if(cb) cb(); });
+  supaRpc('delete_bill', { p_id: billId }).then(function(){ if(cb) cb(); });
 }
 
 // ─── Realtime subscription ────────────────────────────────────────────────────
@@ -1116,7 +1143,7 @@ function subscribeToPayments(billId){
 // Pull latest payments from server and re-render dashboard
 function refreshDashFromServer(cb){
   if(!currentBillId) return;
-  supaGet('payments?bill_id=eq.'+currentBillId+'&order=created_at.asc&select=*').then(function(pmts){
+  supaRpc('get_payments_for_bill', { p_bill_id: currentBillId }).then(function(pmts){
     if(!pmts || !curSess()) return;
     // Merge new payments into session — don't remove existing ones (preserves local state)
     var existing = curSess().payments;
@@ -1144,7 +1171,7 @@ setInterval(function(){
 setInterval(function(){
   var s4 = el('s4');
   if(s4 && s4.classList.contains('active') && currentBillId && splitMode!=='equal'){
-    supaGet('payments?bill_id=eq.'+currentBillId+'&select=*').then(function(pmts){
+    supaRpc('get_payments_for_bill', { p_bill_id: currentBillId }).then(function(pmts){
       if(!pmts || !curSess()) return;
       (pmts||[]).forEach(function(p){
         var exists = curSess().payments.some(function(x){return x.id===p.id;});
@@ -1561,7 +1588,7 @@ function saveBillLabel(val){
   persistSessions();
   // Sync to Supabase
   if(sessions[activeSession].supaId){
-    supaPatch('bills?id=eq.'+sessions[activeSession].supaId, { label: sessions[activeSession].label });
+    supaRpc('rename_bill', { p_id: sessions[activeSession].supaId, p_label: sessions[activeSession].label });
   }
   renderDash();
 }
@@ -2195,7 +2222,7 @@ function confirmSent(){
 
   // For item splits: re-fetch latest payments first to catch concurrency conflicts
   if(!isEq && currentBillId){
-    supaGet('payments?bill_id=eq.'+currentBillId+'&select=*').then(function(latestPmts){
+    supaRpc('get_payments_for_bill', { p_bill_id: currentBillId }).then(function(latestPmts){
       // Build set of already-claimed item IDs from confirmed payments
       var nowClaimed = {};
       (latestPmts||[]).forEach(function(p){
